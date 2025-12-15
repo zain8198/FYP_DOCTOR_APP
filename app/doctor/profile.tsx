@@ -42,21 +42,84 @@ export default function DoctorProfileScreen() {
         fetchDoc();
     }, []);
 
+    const pickImage = async () => {
+        // @ts-ignore
+        const { status } = await import('expo-image-picker').then(mod => mod.requestMediaLibraryPermissionsAsync());
+        if (status !== 'granted') {
+            Alert.alert("Permission Denied", "Sorry, we need camera roll permissions to make this work!");
+            return;
+        }
+
+        const result = await import('expo-image-picker').then(mod => mod.launchImageLibraryAsync({
+            mediaTypes: mod.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.5,
+        }));
+
+        if (!result.canceled) {
+            setProfile({ ...profile, image: result.assets[0].uri });
+        }
+    };
+
+    const uploadImageToCloudinary = async (uri: string) => {
+        try {
+            const formData = new FormData();
+            // @ts-ignore
+            formData.append('file', {
+                uri: uri,
+                type: 'image/jpeg',
+                name: 'upload.jpg',
+            });
+            formData.append('upload_preset', 'doctor--app');
+            formData.append('cloud_name', 'dclh5rrgv');
+
+            const response = await fetch('https://api.cloudinary.com/v1_1/dclh5rrgv/image/upload', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.secure_url;
+        } catch (error: any) {
+            console.error("Cloudinary upload error:", error);
+            throw error;
+        }
+    };
+
     const handleSave = async () => {
         if (!auth.currentUser) return;
         setSaving(true);
         try {
+            let imageUrl = profile.image;
+
+            // Check if it's a local URI (needs upload)
+            if (profile.image && (profile.image.startsWith('file://') || profile.image.startsWith('content://'))) {
+                imageUrl = await uploadImageToCloudinary(profile.image);
+            }
+
             const refDoc = ref(db, `doctors/${auth.currentUser.uid}`);
             await update(refDoc, {
                 name: profile.name,
-                specialty: profile.specialty, // Standardizing key
-                profession: profile.specialty, // Legacy support
+                specialty: profile.specialty,
+                profession: profile.specialty,
                 experience: profile.experience,
                 price: profile.price,
-                bio: profile.bio
+                bio: profile.bio,
+                image: imageUrl
             });
+
+            // Update Auth Profile too if possible
+            // await updateProfile(auth.currentUser, { photoURL: imageUrl });
+
             Alert.alert("Success", "Profile updated successfully!");
         } catch (error) {
+            console.error("Profile save error:", error);
             Alert.alert("Error", "Failed to update profile.");
         } finally {
             setSaving(false);
@@ -86,7 +149,7 @@ export default function DoctorProfileScreen() {
                             size={100}
                             source={{ uri: profile.image || 'https://i.pravatar.cc/150?img=11' }}
                         />
-                        <TouchableOpacity style={styles.camIcon} onPress={() => Alert.alert("Upload", "Feature coming soon!")}>
+                        <TouchableOpacity style={styles.camIcon} onPress={pickImage}>
                             <Ionicons name="camera" size={20} color="#FFF" />
                         </TouchableOpacity>
                     </View>
