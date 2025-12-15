@@ -36,14 +36,18 @@ export default function HomeScreen() {
         const doctorsRef = ref(db, 'doctors');
         const unsubscribe = onValue(doctorsRef, (snapshot) => {
             const data = snapshot.val();
-            const doctorList = data ? Object.keys(data).map(key => ({
-                id: key,
-                ...data[key],
-                rating: data[key].rating ? parseFloat(data[key].rating) : 4.9,
-                image: data[key].image || 'https://i.pravatar.cc/150?img=32',
-                specialty: data[key].specialty || 'General Physician',
-                price: 300
-            })) : [];
+            const doctorList = data ? Object.keys(data)
+                .map(key => ({
+                    id: key,
+                    ...data[key],
+                    rating: data[key].rating ? parseFloat(data[key].rating) : 4.9,
+                    image: data[key].image || 'https://i.pravatar.cc/150?img=32',
+                    specialty: data[key].specialty || 'General Physician',
+                    price: 300,
+                    status: data[key].status || 'pending'
+                }))
+                .filter(doc => doc.status === 'approved')
+                : [];
             setDoctors(doctorList);
         });
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, FlatList, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Platform, StatusBar } from "react-native";
 import { Text, Avatar, ActivityIndicator } from "react-native-paper";
-import { ref, get } from "firebase/database";
+import { ref, get, update } from "firebase/database";
 import { auth, db } from "../../firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
@@ -13,6 +13,33 @@ export default function DoctorDashboard() {
     const [doctorProfile, setDoctorProfile] = useState<any>(null);
     const [stats, setStats] = useState({ patients: 0, experience: '3 Yrs', rating: 4.8 });
     const router = useRouter();
+
+    const handleStatusUpdate = async (patientId: string, appointmentId: string, newStatus: string) => {
+        try {
+            // Update the specific appointment node
+            const aptRef = ref(db, `appointments/${patientId}/${appointmentId}`);
+            await update(aptRef, { status: newStatus });
+
+            // Optimistically update local state to reflect change immediately
+            setAppointments(prev => prev.map(apt =>
+                apt.id === appointmentId ? { ...apt, status: newStatus } : apt
+            ));
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("Failed to update status");
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'pending': return { bg: '#FFF3E0', text: '#EF6C00' };
+            case 'confirmed': return { bg: '#E3F2FD', text: '#2196F3' };
+            case 'upcoming': return { bg: '#E3F2FD', text: '#2196F3' };
+            case 'completed': return { bg: '#E8F5E9', text: '#2E7D32' };
+            case 'cancelled': return { bg: '#FFEBEE', text: '#C62828' };
+            default: return { bg: '#F5F5F5', text: '#757575' };
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -103,6 +130,34 @@ export default function DoctorDashboard() {
         </View>
     );
 
+    // 3. Approval Check
+    if (!loading && doctorProfile && doctorProfile.status !== 'approved') {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={[styles.loadingContainer, { padding: 40 }]}>
+                    <Ionicons
+                        name={doctorProfile.status === 'rejected' ? "close-circle" : "time-outline"}
+                        size={80}
+                        color={doctorProfile.status === 'rejected' ? Colors.error : Colors.primary}
+                    />
+                    <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 20, textAlign: 'center' }}>
+                        {doctorProfile.status === 'rejected' ? "Application Rejected" : "Account Under Review"}
+                    </Text>
+                    <Text style={{ textAlign: 'center', color: '#666', marginTop: 10, lineHeight: 22 }}>
+                        {doctorProfile.status === 'rejected'
+                            ? "We're sorry, but your application to join Doctor App has been declined. Please contact support for more details."
+                            : "Your profile is currently being reviewed by our admin team. You will get access to the dashboard once approved."}
+                    </Text>
+                    {doctorProfile.status !== 'rejected' && (
+                        <View style={{ marginTop: 20, padding: 10, backgroundColor: '#E3F2FD', borderRadius: 8 }}>
+                            <Text style={{ color: Colors.primary, fontWeight: '600' }}>Status: Pending Approval</Text>
+                        </View>
+                    )}
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#F5F7FA" />
@@ -113,7 +168,7 @@ export default function DoctorDashboard() {
                         <Text style={styles.greeting}>Welcome Back,</Text>
                         <Text style={styles.docName}>Dr. {doctorProfile?.name || "Doctor"} 👋</Text>
                     </View>
-                    <Avatar.Image size={50} source={{ uri: doctorProfile?.image || 'https://i.pravatar.cc/150?img=11' }} />
+                    <Avatar.Image size={50} source={doctorProfile?.image ? { uri: doctorProfile.image } : require('../../assets/images/default_doctor.jpg')} />
                 </View>
 
                 {/* Stats Row */}
@@ -142,14 +197,18 @@ export default function DoctorDashboard() {
                         <View key={item.id} style={styles.appointmentCard}>
                             <View style={styles.cardHeader}>
                                 <View style={styles.patientInfo}>
-                                    <Avatar.Image size={50} source={{ uri: item.patientImage || 'https://i.pravatar.cc/150?img=8' }} />
+                                    {item.patientImage ? (
+                                        <Avatar.Image size={50} source={{ uri: item.patientImage }} />
+                                    ) : (
+                                        <Avatar.Text size={50} label={item.patientName.substring(0, 2).toUpperCase()} style={{ backgroundColor: Colors.primary }} color="white" />
+                                    )}
                                     <View style={{ marginLeft: 15 }}>
                                         <Text style={styles.patientName}>{item.patientName}</Text>
                                         <Text style={styles.problemText}>{item.details || "General Checkup"}</Text>
                                     </View>
                                 </View>
-                                <View style={[styles.badge, { backgroundColor: item.status === 'Completed' ? '#E8F5E9' : '#E3F2FD' }]}>
-                                    <Text style={[styles.badgeText, { color: item.status === 'Completed' ? '#2E7D32' : '#1565C0' }]}>
+                                <View style={[styles.badge, { backgroundColor: getStatusColor(item.status).bg }]}>
+                                    <Text style={[styles.badgeText, { color: getStatusColor(item.status).text }]}>
                                         {item.status}
                                     </Text>
                                 </View>
@@ -163,11 +222,38 @@ export default function DoctorDashboard() {
                                     <Text style={styles.timeText}>{item.date || "Today, 10:00 AM"}</Text>
                                 </View>
                                 <View style={styles.actions}>
+                                    {/* Status Actions */}
+                                    {item.status === 'pending' && (
+                                        <>
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, { backgroundColor: '#4CAF50' }]}
+                                                onPress={() => handleStatusUpdate(item.patientId, item.id, 'confirmed')}
+                                            >
+                                                <Ionicons name="checkmark" size={16} color="white" />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, { backgroundColor: '#F44336' }]}
+                                                onPress={() => handleStatusUpdate(item.patientId, item.id, 'cancelled')}
+                                            >
+                                                <Ionicons name="close" size={16} color="white" />
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
+
+                                    {(item.status === 'confirmed' || item.status === 'upcoming') && (
+                                        <TouchableOpacity
+                                            style={[styles.actionBtn, { backgroundColor: '#2196F3', width: 'auto', paddingHorizontal: 12 }]}
+                                            onPress={() => handleStatusUpdate(item.patientId, item.id, 'completed')}
+                                        >
+                                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>Complete</Text>
+                                        </TouchableOpacity>
+                                    )}
+
                                     <TouchableOpacity
                                         style={[styles.iconBtn, { backgroundColor: Colors.primary }]}
-                                        onPress={() => router.push({ pathname: "/chat/[id]", params: { id: item.patientId, name: item.patientName } } as any)}
+                                        onPress={() => router.push({ pathname: "/chat/[id]", params: { id: item.patientId, name: item.patientName, image: item.patientImage } } as any)}
                                     >
-                                        <Ionicons name="chatbubble-ellipses" size={20} color="#FFF" />
+                                        <Ionicons name="chatbubble-ellipses" size={18} color="#FFF" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -271,7 +357,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         marginBottom: 15,
         borderRadius: 16,
-        padding: 20, // Increased padding
+        padding: 15, // Reduced padding
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
@@ -309,7 +395,7 @@ const styles = StyleSheet.create({
     divider: {
         height: 1,
         backgroundColor: '#F0F0F0',
-        marginVertical: 15,
+        marginVertical: 10, // Reduced vertical margin
     },
     cardFooter: {
         flexDirection: 'row',
@@ -319,27 +405,39 @@ const styles = StyleSheet.create({
     timeInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
         backgroundColor: '#F5F7FA',
         paddingVertical: 6,
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         borderRadius: 10,
     },
     timeText: {
-        fontSize: 14,
+        fontSize: 12, // Smaller font
         color: '#444',
         fontWeight: '600',
     },
     actions: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 6, // Tighter gap
     },
     iconBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F0F2F5', // Soft grey
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F0F2F5',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    actionBtn: {
+        height: 32,
+        width: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+        elevation: 2,
     },
 });

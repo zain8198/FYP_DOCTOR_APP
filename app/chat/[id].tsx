@@ -15,7 +15,7 @@ interface Message {
 }
 
 export default function ChatScreen() {
-    const { id, name } = useLocalSearchParams(); // Doctor's ID and Name
+    const { id, name, image } = useLocalSearchParams(); // Doctor's ID and Name
     const router = useRouter();
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
@@ -99,10 +99,16 @@ export default function ChatScreen() {
 
     const renderItem = ({ item }: { item: Message }) => {
         const isMyMessage = item.senderId === currentUserId;
-        const userImage = auth.currentUser?.photoURL || 'https://i.pravatar.cc/150?img=5';
-        // Placeholder for doctor image since we don't fetch it explicitly here yet, 
-        // but could pass it via params. For now using a consistent doctor placeholder or params if available.
-        const doctorImage = 'https://i.pravatar.cc/150?img=32';
+
+        // Context: If I am the doctor (in Doctor App), my fallback is default_doctor.jpg
+        const currentUserImageSource = auth.currentUser?.photoURL
+            ? { uri: auth.currentUser.photoURL }
+            : require('../../assets/images/default_doctor.jpg');
+
+        // Other user is Patient (passed via params or fallback)
+        const otherUserImageSource = image
+            ? { uri: image as string }
+            : require('../../assets/images/default_avatar.jpg');
 
         return (
             <View style={[
@@ -110,7 +116,7 @@ export default function ChatScreen() {
                 isMyMessage ? styles.myMessageRow : styles.theirMessageRow
             ]}>
                 {!isMyMessage && (
-                    <Image source={{ uri: doctorImage }} style={styles.chatAvatar} />
+                    <Image source={otherUserImageSource} style={styles.chatAvatar} />
                 )}
 
                 <View style={[
@@ -126,7 +132,7 @@ export default function ChatScreen() {
                 </View>
 
                 {isMyMessage && (
-                    <Image source={{ uri: userImage }} style={styles.chatAvatar} />
+                    <Image source={currentUserImageSource} style={styles.chatAvatar} />
                 )}
             </View>
         );
