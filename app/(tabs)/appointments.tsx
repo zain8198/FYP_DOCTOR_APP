@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, FlatList, StyleSheet, Image, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
 import { Text, Avatar } from "react-native-paper";
+import { useRouter } from "expo-router";
 import { ref, onValue, push, serverTimestamp, get, update, remove } from "firebase/database";
 import { auth, db } from "../../firebase";
 import { ReviewModal } from "../../components/ReviewModal";
@@ -8,6 +9,7 @@ import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function AppointmentsScreen() {
+    const router = useRouter();
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [reviewModalVisible, setReviewModalVisible] = useState(false);
@@ -139,6 +141,12 @@ export default function AppointmentsScreen() {
                 <View style={styles.emptyState}>
                     <Avatar.Icon size={80} icon="calendar-remove" style={{ backgroundColor: '#f0f0f0' }} color={Colors.textSecondary} />
                     <Text style={{ marginTop: 20, color: Colors.textSecondary, fontSize: 16 }}>No appointments found.</Text>
+                    <TouchableOpacity
+                        style={styles.findDoctorButton}
+                        onPress={() => router.push("/(tabs)/home" as any)} // Navigate to Home
+                    >
+                        <Text style={styles.findDoctorText}>Find a Doctor</Text>
+                    </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
@@ -307,5 +315,23 @@ const styles = StyleSheet.create({
     rateButtonText: {
         color: Colors.white,
         fontWeight: 'bold',
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 50,
+    },
+    findDoctorButton: {
+        marginTop: 20,
+        backgroundColor: Colors.primary,
+        paddingHorizontal: 25,
+        paddingVertical: 12,
+        borderRadius: 25,
+    },
+    findDoctorText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     }
 });
