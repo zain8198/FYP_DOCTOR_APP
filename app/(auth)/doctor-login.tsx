@@ -11,6 +11,7 @@ export default function DoctorLoginScreen() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const theme = useTheme();
 
@@ -25,7 +26,6 @@ export default function DoctorLoginScreen() {
             const user = userCredential.user;
 
             // Check if doctor exists in DB
-            // Verify doctor role in database with timeout
             const doctorRef = ref(db, `doctors/${user.uid}`);
             const snapshot: any = await Promise.race([
                 get(doctorRef),
@@ -47,54 +47,61 @@ export default function DoctorLoginScreen() {
 
     return (
         <ThemedBackground style={styles.container}>
-            <View style={styles.header}>
-                <Text variant="headlineLarge" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                    Doctor Portal
-                </Text>
-                <Text variant="bodyLarge" style={{ color: theme.colors.secondary }}>
-                    Login to manage appointments
-                </Text>
-            </View>
-
-            <View style={styles.form}>
-                <TextInput
-                    label="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                    mode="outlined"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    style={styles.input}
-                />
-                <TextInput
-                    label="Password"
-                    value={password}
-                    onChangeText={setPassword}
-                    mode="outlined"
-                    secureTextEntry
-                    style={styles.input}
-                />
-
-                <Button
-                    mode="contained"
-                    onPress={handleLogin}
-                    loading={loading}
-                    style={styles.button}
-                >
-                    Login
-                </Button>
-
-                <TouchableOpacity onPress={() => router.push("/(auth)/doctor-register")} style={styles.link}>
-                    <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                        New Doctor? Verify & Register
+            <View style={styles.content}>
+                <View style={styles.header}>
+                    <Text variant="displaySmall" style={{ color: theme.colors.primary, fontWeight: 'bold', marginBottom: 8 }}>
+                        Doctor Portal
                     </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => router.replace("/(auth)/login")} style={styles.link}>
-                    <Text style={{ color: theme.colors.secondary }}>
-                        Not a doctor? User Login
+                    <Text variant="titleMedium" style={{ color: theme.colors.secondary, opacity: 0.8 }}>
+                        Login to manage appointments
                     </Text>
-                </TouchableOpacity>
+                </View>
+
+                <View style={styles.form}>
+                    <TextInput
+                        label="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        mode="outlined"
+                        autoCapitalize="none"
+                        keyboardType="email-address"
+                        left={<TextInput.Icon icon="doctor" />}
+                        style={styles.input}
+                    />
+                    <TextInput
+                        label="Password"
+                        value={password}
+                        onChangeText={setPassword}
+                        mode="outlined"
+                        secureTextEntry={!showPassword}
+                        left={<TextInput.Icon icon="lock-outline" />}
+                        right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
+                        style={styles.input}
+                    />
+
+                    <Button
+                        mode="contained"
+                        onPress={handleLogin}
+                        loading={loading}
+                        style={styles.button}
+                        contentStyle={styles.buttonContent}
+                        labelStyle={styles.buttonLabel}
+                    >
+                        Login
+                    </Button>
+
+                    <TouchableOpacity onPress={() => router.push("/(auth)/doctor-register")} style={styles.link}>
+                        <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                            New Doctor? Verify & Register
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => router.replace("/(auth)/login")} style={styles.subLink}>
+                        <Text style={{ color: theme.colors.secondary }}>
+                            Not a doctor? User Login
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </ThemedBackground>
     );
@@ -102,10 +109,15 @@ export default function DoctorLoginScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        justifyContent: "center",
+        flex: 1,
+    },
+    content: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 24,
     },
     header: {
-        marginBottom: 40,
+        marginBottom: 48,
         alignItems: "center",
     },
     form: {
@@ -113,13 +125,26 @@ const styles = StyleSheet.create({
     },
     input: {
         marginBottom: 16,
+        backgroundColor: 'rgba(255,255,255,0.7)'
     },
     button: {
-        marginTop: 10,
-        borderRadius: 8,
+        marginTop: 8,
+        borderRadius: 12,
+        elevation: 2,
+    },
+    buttonContent: {
+        paddingVertical: 8,
+    },
+    buttonLabel: {
+        fontWeight: 'bold',
+        fontSize: 16,
     },
     link: {
-        marginTop: 20,
+        marginTop: 32,
+        alignItems: 'center',
+    },
+    subLink: {
+        marginTop: 16,
         alignItems: 'center',
     }
 });

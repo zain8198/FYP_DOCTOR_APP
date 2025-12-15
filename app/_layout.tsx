@@ -13,9 +13,15 @@ const theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#6750a4",
-    secondary: "#625b71",
-    tertiary: "#7d5260",
+    primary: "#2F8062", // Exact match from Colors.ts
+    onPrimary: "#FFFFFF",
+    primaryContainer: "#E8F5E9", // Colors.lightGreen
+    onPrimaryContainer: "#001e00", // Dark text on light container
+    secondary: "#2F8062", // Reusing primary as secondary for brand consistency, or could use darkGreen
+    secondaryContainer: "#EAF4F0", // Colors.iconBg
+    tertiary: "#1B5E20", // Colors.darkGreen
+    background: "#F4F9F6", // Colors.background
+    surface: "#FFFFFF", // Colors.card
   },
 };
 

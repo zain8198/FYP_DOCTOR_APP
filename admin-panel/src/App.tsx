@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import DoctorList from './pages/doctors/DoctorList';
+import Patients from './pages/Patients';
 import PrivateRoute from './components/common/PrivateRoute';
 import './App.css';
 
@@ -28,6 +29,15 @@ function App() {
             element={
               <PrivateRoute>
                 <DoctorList />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/patients"
+            element={
+              <PrivateRoute>
+                <Patients />
               </PrivateRoute>
             }
           />
