@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
@@ -93,17 +93,35 @@ export default function ChatScreen() {
 
     const renderItem = ({ item }: { item: Message }) => {
         const isMyMessage = item.senderId === currentUserId;
+        const userImage = auth.currentUser?.photoURL || 'https://i.pravatar.cc/150?img=5';
+        // Placeholder for doctor image since we don't fetch it explicitly here yet, 
+        // but could pass it via params. For now using a consistent doctor placeholder or params if available.
+        const doctorImage = 'https://i.pravatar.cc/150?img=32';
+
         return (
             <View style={[
-                styles.messageBubble,
-                isMyMessage ? styles.myMessage : styles.theirMessage
+                styles.messageRow,
+                isMyMessage ? styles.myMessageRow : styles.theirMessageRow
             ]}>
-                <Text style={[styles.messageText, isMyMessage ? styles.myMessageText : styles.theirMessageText]}>
-                    {item.text}
-                </Text>
-                <Text style={styles.timestamp}>
-                    {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sending...'}
-                </Text>
+                {!isMyMessage && (
+                    <Image source={{ uri: doctorImage }} style={styles.chatAvatar} />
+                )}
+
+                <View style={[
+                    styles.messageBubble,
+                    isMyMessage ? styles.myMessage : styles.theirMessage
+                ]}>
+                    <Text style={[styles.messageText, isMyMessage ? styles.myMessageText : styles.theirMessageText]}>
+                        {item.text}
+                    </Text>
+                    <Text style={styles.timestamp}>
+                        {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sending...'}
+                    </Text>
+                </View>
+
+                {isMyMessage && (
+                    <Image source={{ uri: userImage }} style={styles.chatAvatar} />
+                )}
             </View>
         );
     };
@@ -125,9 +143,7 @@ export default function ChatScreen() {
                             <Text style={styles.headerTitle}>{name || 'Doctor'}</Text>
                             <Text style={styles.headerSubtitle}>Online</Text>
                         </View>
-                        <TouchableOpacity>
-                            <Ionicons name="call-outline" size={24} color={Colors.primary} />
-                        </TouchableOpacity>
+
                     </View>
 
                     {/* Messages List */}
@@ -271,5 +287,23 @@ const styles = StyleSheet.create({
         borderRadius: 22.5,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        marginBottom: 10,
+    },
+    myMessageRow: {
+        justifyContent: 'flex-end',
+    },
+    theirMessageRow: {
+        justifyContent: 'flex-start',
+    },
+    chatAvatar: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        marginHorizontal: 8,
+        marginBottom: 5,
     },
 });

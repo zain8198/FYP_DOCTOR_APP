@@ -217,12 +217,13 @@ export default function ProfileScreen() {
                         {loading ? <ActivityIndicator color="white" /> : <Text style={styles.saveButtonText}>Save Profile</Text>}
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                        <Text style={styles.logoutButtonText}>Log Out</Text>
-                    </TouchableOpacity>
-
                 </View>
             </ScrollView>
+
+            {/* Absolute Logout Button */}
+            <TouchableOpacity style={styles.logoutAbsolute} onPress={handleLogout}>
+                <Ionicons name="power" size={24} color="white" />
+            </TouchableOpacity>
         </View>
     );
 }
@@ -242,9 +243,17 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
     },
+    logoutAbsolute: {
+        position: 'absolute',
+        top: 50, // Adjust based on Statusbar
+        right: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        padding: 8,
+        borderRadius: 20,
+    },
     scrollContent: {
         paddingTop: 60,
-        paddingBottom: 40,
+        paddingBottom: 120,
         paddingHorizontal: 20,
     },
     profileHeader: {
@@ -348,17 +357,4 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    logoutButton: {
-        marginTop: 20,
-        borderWidth: 1,
-        borderColor: '#FF5252',
-        borderRadius: 12,
-        paddingVertical: 14,
-        alignItems: 'center',
-    },
-    logoutButtonText: {
-        color: '#FF5252',
-        fontSize: 16,
-        fontWeight: '600',
-    }
 });

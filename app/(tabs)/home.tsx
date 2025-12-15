@@ -89,7 +89,10 @@ export default function HomeScreen() {
             <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.paddingContainer}>
-                    <HomeHeader userName={auth.currentUser?.displayName?.split(' ')[0] || "User"} />
+                    <HomeHeader
+                        userName={auth.currentUser?.displayName?.split(' ')[0] || "User"}
+                        userImage={auth.currentUser?.photoURL}
+                    />
                     <SearchBar />
 
                     <CategoryList

@@ -5,14 +5,15 @@ import { Colors } from '../../constants/Colors';
 
 interface HomeHeaderProps {
     userName: string;
+    userImage?: string | null;
 }
 
-export const HomeHeader: React.FC<HomeHeaderProps> = ({ userName }) => {
+export const HomeHeader: React.FC<HomeHeaderProps> = ({ userName, userImage }) => {
     return (
         <View style={styles.container}>
             <View style={styles.profileContainer}>
                 <Image
-                    source={{ uri: 'https://i.pravatar.cc/150?img=5' }} // Mock image
+                    source={{ uri: userImage || 'https://i.pravatar.cc/150?img=5' }}
                     style={styles.profileImage}
                 />
                 <View>
