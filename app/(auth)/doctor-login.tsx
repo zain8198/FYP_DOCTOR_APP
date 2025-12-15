@@ -16,10 +16,15 @@ export default function DoctorLoginScreen() {
     const theme = useTheme();
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert("Error", "Please enter both email and password");
+        if (!email) {
+            Alert.alert("Required Field", "Please enter your email address.");
             return;
         }
+        if (!password) {
+            Alert.alert("Required Field", "Please enter your password.");
+            return;
+        }
+
         setLoading(true);
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -35,11 +40,21 @@ export default function DoctorLoginScreen() {
             if (snapshot.exists()) {
                 router.replace("/doctor/dashboard");
             } else {
-                Alert.alert("Access Denied", "No doctor account found.");
+                Alert.alert("Access Denied", "No doctor account found associated with this email.");
                 await auth.signOut();
             }
         } catch (error: any) {
-            Alert.alert("Login Failed", error.message);
+            let message = "Login failed. Please try again.";
+            if (error.code === 'auth/invalid-email') {
+                message = "The email address format is invalid.";
+            } else if (error.code === 'auth/user-not-found') {
+                message = "No doctor account found with this email.";
+            } else if (error.code === 'auth/wrong-password') {
+                message = "Incorrect password. Please try again.";
+            } else if (error.code === 'auth/invalid-credential') {
+                message = "Invalid credentials. Please check your email and password.";
+            }
+            Alert.alert("Login Failed", message);
         } finally {
             setLoading(false);
         }

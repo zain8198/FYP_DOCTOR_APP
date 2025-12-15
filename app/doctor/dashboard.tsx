@@ -364,7 +364,53 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3,
     },
-    // ... (intermediate styles unchanged)
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    patientInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    patientName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    problemText: {
+        fontSize: 13,
+        color: '#888',
+        marginTop: 2,
+    },
+    badge: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12, // Rounded pill shape
+        marginLeft: 5,
+    },
+    badgeText: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        textTransform: 'capitalize',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F0F2F5',
+        marginVertical: 10,
+    },
+    cardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    timeInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
     timeText: {
         fontSize: 12, // Smaller font
         color: '#444',

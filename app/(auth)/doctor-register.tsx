@@ -91,13 +91,19 @@ export default function DoctorRegisterScreen() {
     };
 
     const handleSignUp = async () => {
-        if (!name || !email || !password || !specialty || !phone || !experience || !clinic || !fee || !license) {
-            Alert.alert("Error", "Please fill in all required fields (marked *)");
-            return;
-        }
+        // Validation with specific messages
+        if (!name) return Alert.alert("Required Field", "Please enter your full name.");
+        if (!email) return Alert.alert("Required Field", "Please enter your email address.");
+        if (!password) return Alert.alert("Required Field", "Please enter a password.");
+        if (!specialty) return Alert.alert("Required Field", "Please select your medical specialty.");
+        if (!phone) return Alert.alert("Required Field", "Please enter your phone number.");
+        if (!experience) return Alert.alert("Required Field", "Please enter your years of experience.");
+        if (!clinic) return Alert.alert("Required Field", "Please enter your clinic or hospital name.");
+        if (!fee) return Alert.alert("Required Field", "Please enter your consultation fee.");
+        if (!license) return Alert.alert("Required Field", "Please enter your medical license number.");
 
         if (!documentUri) {
-            Alert.alert("Error", "Please upload your medical license for verification.");
+            Alert.alert("Document Required", "Please upload your medical license for verification.");
             return;
         }
 
@@ -108,11 +114,6 @@ export default function DoctorRegisterScreen() {
 
             // Upload Document to Cloudinary
             const downloadURL = await uploadImageToCloudinary(documentUri);
-
-            // Legacy reference removed: const blob = await response.blob(); 
-            // Legacy reference removed: const licenseRef = storageRef(storage, `doctor_documents/${user.uid}/license`);
-            // Legacy reference removed: await uploadBytes(licenseRef, blob);
-            // Legacy reference removed: const downloadURL = await getDownloadURL(licenseRef);
 
             // Save doctor details to Realtime Database
             const doctorRef = ref(db, `doctors/${user.uid}`);
@@ -136,7 +137,17 @@ export default function DoctorRegisterScreen() {
             Alert.alert("Success", "Doctor account created! Verification pending. Please login.");
             router.replace("/(auth)/doctor-login");
         } catch (error: any) {
-            Alert.alert("Registration Failed", error.message);
+            let message = "An unexpected error occurred. Please try again.";
+            if (error.code === 'auth/email-already-in-use') {
+                message = "This email address is already registered. Please log in instead or use a different email.";
+            } else if (error.code === 'auth/invalid-email') {
+                message = "The email address format is invalid.";
+            } else if (error.code === 'auth/weak-password') {
+                message = "Password is too weak. Please use a stronger password (at least 6 characters).";
+            } else if (error.message) {
+                message = error.message;
+            }
+            Alert.alert("Registration Failed", message);
         } finally {
             setLoading(false);
         }

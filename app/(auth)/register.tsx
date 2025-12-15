@@ -15,18 +15,31 @@ export default function RegisterScreen() {
     const theme = useTheme();
 
     const handleSignUp = async () => {
-        if (!email || !password) {
-            Alert.alert("Error", "Please enter both email and password");
+        if (!email) {
+            Alert.alert("Required Field", "Please enter your email address.");
             return;
         }
+        if (!password) {
+            Alert.alert("Required Field", "Please enter a password.");
+            return;
+        }
+
         setLoading(true);
         try {
             const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
             console.log("Registered new user:", userCredentials.user.email);
-            Alert.alert("Success", "Account created! Please login.");
+            Alert.alert("Success", "Account created successfully! Please login.");
             router.back(); // Go back to login
         } catch (error: any) {
-            Alert.alert("Registration Failed", error.message);
+            let message = "Registration failed. Please try again.";
+            if (error.code === 'auth/email-already-in-use') {
+                message = "This email address is already registered.";
+            } else if (error.code === 'auth/invalid-email') {
+                message = "The email address format is invalid.";
+            } else if (error.code === 'auth/weak-password') {
+                message = "Password is too weak. It must be at least 6 characters.";
+            }
+            Alert.alert("Registration Failed", message);
         } finally {
             setLoading(false);
         }
