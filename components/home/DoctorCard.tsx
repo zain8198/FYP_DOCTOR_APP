@@ -9,38 +9,47 @@ interface DoctorCardProps {
     rating: number;
     price: number;
     image: string;
+    isFavorite?: boolean;
     onMessagePress: () => void;
+    onPress: () => void;
+    onFavoritePress?: () => void;
 }
 
-export const DoctorCard: React.FC<DoctorCardProps> = ({ name, specialty, rating, price, image, onMessagePress }) => {
+export const DoctorCard: React.FC<DoctorCardProps> = ({ name, specialty, rating, price, image, isFavorite, onMessagePress, onPress, onFavoritePress }) => {
     return (
         <View style={styles.card}>
-            <View style={styles.header}>
-                <Image source={{ uri: image }} style={styles.image} />
-                <View style={styles.info}>
-                    <Text style={styles.name}>{name}</Text>
-                    <Text style={styles.specialty}>{specialty}</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+                <View style={styles.header}>
+                    <Image source={{ uri: image }} style={styles.image} />
+                    <View style={styles.info}>
+                        <Text style={styles.name}>{name}</Text>
+                        <Text style={styles.specialty}>{specialty}</Text>
+                    </View>
+                    <View style={styles.ratingContainer}>
+                        <Ionicons name="star" size={16} color={Colors.rating} />
+                        <Text style={styles.ratingText}>{rating}</Text>
+                    </View>
                 </View>
-                <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={16} color={Colors.rating} />
-                    <Text style={styles.ratingText}>{rating}</Text>
-                </View>
-            </View>
 
-            <View style={styles.detailsRow}>
-                <View>
-                    <Text style={styles.price}>${price}</Text>
-                    <Text style={styles.perSession}>Per session</Text>
+                <View style={styles.detailsRow}>
+                    <View>
+                        <Text style={styles.price}>${price}</Text>
+                        <Text style={styles.perSession}>Per session</Text>
+                    </View>
+                    <View style={styles.actions}>
+                        <TouchableOpacity style={styles.iconButton} onPress={onFavoritePress}>
+                            <Ionicons
+                                name={isFavorite ? "heart" : "heart-outline"}
+                                size={24}
+                                color={isFavorite ? Colors.error : Colors.textSecondary}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.iconButton, styles.detailButton]} onPress={onPress}>
+                            <Ionicons name="arrow-forward" size={20} color={Colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-                <View style={styles.actions}>
-                    <TouchableOpacity style={styles.iconButton}>
-                        <Ionicons name="heart-outline" size={24} color={Colors.textSecondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.iconButton, styles.detailButton]}>
-                        <Ionicons name="arrow-forward" size={20} color={Colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.buttonRow}>
                 <TouchableOpacity style={styles.actionButton} onPress={onMessagePress}>

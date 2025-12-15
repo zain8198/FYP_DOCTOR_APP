@@ -3,31 +3,49 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 
-const categories = [
-    { id: 1, name: 'Gynecologist', icon: 'medkit-outline' },
-    { id: 2, name: 'Cardiologist', icon: 'heart-outline' },
-    { id: 3, name: 'Dentist', icon: 'happy-outline' },
-    { id: 4, name: 'Neurologist', icon: 'headset-outline' },
-];
+interface Category {
+    id: string | number;
+    name: string;
+    icon: string;
+}
 
-export const CategoryList = () => {
+interface CategoryListProps {
+    categories: Category[];
+    selectedCategory: string;
+    onCategorySelect: (category: string) => void;
+}
+
+export const CategoryList: React.FC<CategoryListProps> = ({ categories, selectedCategory, onCategorySelect }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Doctor Category</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => onCategorySelect('All')}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollContainer}>
-                {categories.map((category) => (
-                    <TouchableOpacity key={category.id} style={styles.card}>
-                        <View style={styles.iconContainer}>
-                            <Ionicons name={category.icon as any} size={24} color={Colors.primary} />
-                        </View>
-                        <Text style={styles.categoryName}>{category.name}</Text>
-                    </TouchableOpacity>
-                ))}
+                {categories.map((category) => {
+                    const isSelected = selectedCategory === category.name;
+                    return (
+                        <TouchableOpacity
+                            key={category.id}
+                            style={[styles.card, isSelected && styles.selectedCard]}
+                            onPress={() => onCategorySelect(category.name)}
+                        >
+                            <View style={[styles.iconContainer, isSelected && styles.selectedIconContainer]}>
+                                <Ionicons
+                                    name={category.icon as any}
+                                    size={24}
+                                    color={isSelected ? Colors.white : Colors.primary}
+                                />
+                            </View>
+                            <Text style={[styles.categoryName, isSelected && styles.selectedCategoryName]}>
+                                {category.name}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
             </ScrollView>
         </View>
     );
@@ -68,13 +86,24 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 3,
         elevation: 1,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    selectedCard: {
+        backgroundColor: Colors.primary,
     },
     iconContainer: {
         marginRight: 10,
+    },
+    selectedIconContainer: {
+        // Optional: change or keep same
     },
     categoryName: {
         fontSize: 14,
         fontWeight: '600',
         color: Colors.text,
+    },
+    selectedCategoryName: {
+        color: Colors.white,
     },
 });
