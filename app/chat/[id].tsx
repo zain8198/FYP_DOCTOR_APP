@@ -34,7 +34,13 @@ export default function ChatScreen() {
 
     // Construct a unique Chat ID. 
     // For simplicity: userId_doctorId. In a real app, ensure consistent ordering or use a separate conversations lookup.
-    const chatId = currentUserId ? `${currentUserId}_${id}` : `temp_${id}`;
+    const targetId = Array.isArray(id) ? id[0] : id;
+
+    // Fix: Generate consistent Chat ID by sorting user IDs
+    // This ensures User A -> User B and User B -> User A open the SAME chat room.
+    const chatId = currentUserId && targetId
+        ? [currentUserId, targetId].sort().join('_')
+        : `temp_${targetId}`;
 
     useEffect(() => {
         if (!currentUserId) return;

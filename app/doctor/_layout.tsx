@@ -1,20 +1,18 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { useTheme } from "react-native-paper";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { Colors } from "../../constants/Colors";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function DoctorLayout() {
-    const theme = useTheme();
-
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: theme.colors.primary,
-                tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+                tabBarActiveTintColor: Colors.primary,
+                tabBarInactiveTintColor: '#999',
                 tabBarStyle: {
-                    backgroundColor: theme.colors.surface,
-                    borderTopColor: theme.colors.outlineVariant,
+                    backgroundColor: '#ffffff',
+                    borderTopColor: '#e0e0e0',
                 },
             }}
         >
