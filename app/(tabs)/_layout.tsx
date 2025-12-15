@@ -1,59 +1,123 @@
 import React from "react";
+import { View, StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
-import { useTheme } from "react-native-paper";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../../constants/Colors";
 
 export default function TabLayout() {
-    const theme = useTheme();
-
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: theme.colors.primary,
-                tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+                tabBarShowLabel: false, // Image shows icons primarily, cleaner look
+                tabBarActiveTintColor: Colors.white,
+                tabBarInactiveTintColor: Colors.primary,
                 tabBarStyle: {
-                    backgroundColor: theme.colors.surface,
-                    borderTopColor: theme.colors.outlineVariant,
+                    backgroundColor: Colors.white,
+                    borderTopWidth: 0,
+                    elevation: 10,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: -2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 10,
+                    height: 80, // Taller bar
+                    paddingBottom: 20,
+                    paddingTop: 10,
+                    borderTopLeftRadius: 30,
+                    borderTopRightRadius: 30,
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
                 },
             }}
         >
             <Tabs.Screen
                 name="home"
                 options={{
-                    tabBarLabel: "Home",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home-outline" size={size} color={color} />
+                    tabBarIcon: ({ focused }) => (
+                        <View style={[
+                            styles.iconContainer,
+                            focused && styles.activeIconContainer
+                        ]}>
+                            <Ionicons
+                                name={focused ? "home" : "home-outline"}
+                                size={24}
+                                color={focused ? Colors.white : Colors.primary}
+                            />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="appointments"
                 options={{
-                    tabBarLabel: "Appointments",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="calendar-outline" size={size} color={color} />
+                    tabBarIcon: ({ focused }) => (
+                        <View style={[
+                            styles.iconContainer,
+                            focused && styles.activeIconContainer
+                        ]}>
+                            <Ionicons
+                                name={focused ? "calendar" : "calendar-outline"}
+                                size={24}
+                                color={focused ? Colors.white : Colors.textSecondary} // Using textSecondary for inactive non-primary
+                            />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="chatbot"
                 options={{
-                    tabBarLabel: "ChatBot",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="chatbubbles-outline" size={size} color={color} />
+                    tabBarIcon: ({ focused }) => (
+                        <View style={[
+                            styles.iconContainer,
+                            focused && styles.activeIconContainer
+                        ]}>
+                            <Ionicons
+                                name={focused ? "chatbubbles" : "chatbubbles-outline"}
+                                size={24}
+                                color={focused ? Colors.white : Colors.textSecondary}
+                            />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="profile"
                 options={{
-                    tabBarLabel: "Profile",
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="person-outline" size={size} color={color} />
+                    tabBarIcon: ({ focused }) => (
+                        <View style={[
+                            styles.iconContainer,
+                            focused && styles.activeIconContainer
+                        ]}>
+                            <Ionicons
+                                name={focused ? "person" : "person-outline"}
+                                size={24}
+                                color={focused ? Colors.white : Colors.textSecondary}
+                            />
+                        </View>
                     ),
                 }}
             />
         </Tabs>
     );
 }
+
+const styles = StyleSheet.create({
+    iconContainer: {
+        width: 50,
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 25,
+    },
+    activeIconContainer: {
+        backgroundColor: Colors.primary,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 5,
+    }
+});
