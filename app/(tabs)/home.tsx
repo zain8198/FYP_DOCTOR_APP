@@ -29,6 +29,7 @@ export default function HomeScreen() {
     const [doctors, setDoctors] = useState<any[]>([]);
     const [filteredDoctors, setFilteredDoctors] = useState<any[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
     const [favorites, setFavorites] = useState<string[]>([]);
 
     useEffect(() => {
@@ -40,7 +41,7 @@ export default function HomeScreen() {
                 ...data[key],
                 rating: data[key].rating ? parseFloat(data[key].rating) : 4.9,
                 image: data[key].image || 'https://i.pravatar.cc/150?img=32',
-                specialty: data[key].specialty || 'General',
+                specialty: data[key].specialty || 'General Physician',
                 price: 300
             })) : [];
             setDoctors(doctorList);
@@ -59,12 +60,34 @@ export default function HomeScreen() {
     }, []);
 
     useEffect(() => {
-        if (selectedCategory === "All") {
-            setFilteredDoctors(doctors);
-        } else {
-            setFilteredDoctors(doctors.filter(doc => doc.specialty === selectedCategory));
+        let result = doctors;
+
+        // 1. Filter by Category
+        if (selectedCategory !== "All") {
+            result = result.filter(doc => {
+                const docSpecialty = doc.specialty?.trim().toLowerCase();
+                const selected = selectedCategory.trim().toLowerCase();
+
+                // Direct match
+                if (docSpecialty === selected) return true;
+                // Handle Alias: General -> General Physician
+                if (selected === 'general physician' && docSpecialty === 'general') return true;
+
+                return false;
+            });
         }
-    }, [selectedCategory, doctors]);
+
+        // 2. Filter by Search Query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            result = result.filter(doc =>
+                doc.name.toLowerCase().includes(query) ||
+                doc.specialty.toLowerCase().includes(query)
+            );
+        }
+
+        setFilteredDoctors(result);
+    }, [selectedCategory, searchQuery, doctors]);
 
     const toggleFavorite = async (doctorId: string) => {
         if (!auth.currentUser) {
@@ -94,7 +117,7 @@ export default function HomeScreen() {
                         userName={auth.currentUser?.displayName?.split(' ')[0] || "User"}
                         userImage={auth.currentUser?.photoURL}
                     />
-                    <SearchBar />
+                    <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
 
                     {/* Quick Actions - Business Model */}
                     <View style={styles.quickActionsContainer}>
@@ -170,20 +193,32 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {filteredDoctors.map((doc) => (
-                        <DoctorCard
-                            key={doc.id}
-                            name={doc.name}
-                            specialty={doc.specialty}
-                            rating={doc.rating}
-                            price={doc.price}
-                            image={doc.image}
-                            isFavorite={favorites.includes(doc.id)}
-                            onFavoritePress={() => toggleFavorite(doc.id)}
-                            onMessagePress={() => router.push({ pathname: "/chat/[id]", params: { id: doc.id, name: doc.name } } as any)}
-                            onPress={() => router.push({ pathname: "/doctor-details", params: { id: doc.id } } as any)}
-                        />
-                    ))}
+                    {filteredDoctors.length > 0 ? (
+                        filteredDoctors.map((doc) => (
+                            <DoctorCard
+                                key={doc.id}
+                                name={doc.name}
+                                specialty={doc.specialty}
+                                rating={doc.rating}
+                                price={doc.price}
+                                image={doc.image}
+                                isFavorite={favorites.includes(doc.id)}
+                                onFavoritePress={() => toggleFavorite(doc.id)}
+                                onMessagePress={() => router.push({ pathname: "/chat/[id]", params: { id: doc.id, name: doc.name } } as any)}
+                                onPress={() => router.push({ pathname: "/doctor-details", params: { id: doc.id } } as any)}
+                            />
+                        ))
+                    ) : (
+                        <View style={{ alignItems: 'center', marginTop: 30, padding: 20 }}>
+                            <Ionicons name="search-outline" size={60} color="#ddd" />
+                            <Text style={{ marginTop: 10, fontSize: 16, color: Colors.textSecondary, fontWeight: '500' }}>
+                                No Doctors Found
+                            </Text>
+                            <Text style={{ fontSize: 13, color: '#999', marginTop: 5 }}>
+                                Try searching for another name or specialty.
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Top Rated Doctors</Text>

@@ -3,15 +3,22 @@ import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 
-export const SearchBar = () => {
+interface SearchBarProps {
+    value?: string;
+    onChangeText?: (text: string) => void;
+}
+
+export const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText }) => {
     return (
         <View style={styles.container}>
             <View style={styles.searchContainer}>
                 <Ionicons name="search-outline" size={20} color={Colors.textSecondary} style={styles.icon} />
                 <TextInput
-                    placeholder="Search here..."
+                    placeholder="Search doctor, specialty..."
                     placeholderTextColor={Colors.textSecondary}
                     style={styles.input}
+                    value={value}
+                    onChangeText={onChangeText}
                 />
             </View>
             <TouchableOpacity style={styles.filterButton}>
