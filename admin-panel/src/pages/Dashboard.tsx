@@ -3,6 +3,7 @@ import Layout from "../components/layout/Layout";
 import { Users, UserCheck, Calendar } from "lucide-react";
 import { ref, get } from "firebase/database";
 import { db } from "../firebase";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function Dashboard() {
     const [stats, setStats] = useState({
@@ -10,6 +11,7 @@ export default function Dashboard() {
         doctors: 0,
         appointments: 0
     });
+    const [chartData, setChartData] = useState<{ name: string, appointments: number }[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -27,22 +29,51 @@ export default function Dashboard() {
                 const aptSnap = await get(ref(db, 'appointments'));
                 let aptCount = 0;
 
+                // Initialize last 7 days
+                const aptDates: Record<string, number> = {};
+                const last7Days = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+                    last7Days.push(dateStr);
+                    aptDates[dateStr] = 0;
+                }
+
                 if (aptSnap.exists()) {
                     const data = aptSnap.val();
                     // Appointments are nested: appointments/{userId}/{aptId}
                     Object.values(data).forEach((userApts: any) => {
                         if (userApts) {
-                            const apts = Object.values(userApts);
-                            aptCount += apts.length;
+                            Object.values(userApts).forEach((apt: any) => {
+                                aptCount++;
+                                if (apt.dateIso && aptDates.hasOwnProperty(apt.dateIso)) {
+                                    aptDates[apt.dateIso]++;
+                                }
+                            });
                         }
                     });
                 }
+
+                // Format data for Recharts
+                const formattedChartData = last7Days.map(dateStr => {
+                    const d = new Date(dateStr);
+                    // Fix timezone issue by treating string as local date components or just appending T00:00
+                    // Actually, simple day name derivation:
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+                    return {
+                        name: dayName,
+                        appointments: aptDates[dateStr]
+                    };
+                });
 
                 setStats({
                     patients: usersCount,
                     doctors: doctorsCount,
                     appointments: aptCount
                 });
+                setChartData(formattedChartData);
+
             } catch (error) {
                 console.error("Error fetching dashboard stats:", error);
             } finally {
@@ -80,9 +111,43 @@ export default function Dashboard() {
             </div>
 
             <div style={{ marginTop: '40px' }}>
-                <h3>Recent Activity</h3>
-                <div style={styles.placeholderChart}>
-                    <p style={{ color: '#94A3B8' }}>Chart Visualization Coming Soon</p>
+                <h3 style={styles.sectionTitle}>Appointment Trends (Last 7 Days)</h3>
+                <div style={styles.chartContainer}>
+                    {loading ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                            Loading chart...
+                        </div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                <XAxis
+                                    dataKey="name"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fill: '#64748B', fontSize: 12 }}
+                                    dy={10}
+                                />
+                                <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fill: '#64748B', fontSize: 12 }}
+                                    allowDecimals={false}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: '#F1F5F9' }}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                />
+                                <Bar
+                                    dataKey="appointments"
+                                    fill="#3B82F6"
+                                    radius={[4, 4, 0, 0]}
+                                    barSize={40}
+                                    name="Appointments"
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
             </div>
         </Layout>
@@ -150,8 +215,6 @@ const styles: { [key: string]: React.CSSProperties } = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        // Creating a subtle background based on the icon color passed in styles isn't strictly CSS variable compliant
-        // but keeps the dynamic nature. We'll simplify the box style.
     },
     cardFooter: {
         marginTop: '16px',
@@ -160,15 +223,18 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontSize: '12px',
         color: 'var(--muted-foreground)'
     },
-    placeholderChart: {
+    sectionTitle: {
+        fontSize: '18px',
+        fontWeight: 600,
+        marginBottom: '20px',
+        color: '#1E293B'
+    },
+    chartContainer: {
         height: '400px',
         backgroundColor: 'var(--card)',
         borderRadius: 'var(--radius)',
         border: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: '24px',
+        padding: '20px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
     }
 };

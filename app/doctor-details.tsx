@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, Platform, ActivityIndicator, Touch
 import { Text, Button, Card, Avatar, useTheme, Chip } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { format, parse, addHours, isBefore, isEqual } from "date-fns";
+import { format, parse, addHours, isBefore, isEqual, addDays } from "date-fns";
 import { ref, push, get, set, update } from "firebase/database";
 import { auth, db } from "../firebase";
 import { Colors } from "../constants/Colors";
@@ -16,6 +16,7 @@ export default function DoctorDetailsScreen() {
 
     const [doctor, setDoctor] = useState<any>(null);
     const [date, setDate] = useState(new Date());
+    const [availableDates, setAvailableDates] = useState<Date[]>([]);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
@@ -47,6 +48,38 @@ export default function DoctorDetailsScreen() {
         fetchDoctor();
     }, [id]);
 
+    // Calculate Next Available Dates
+    useEffect(() => {
+        if (!doctor) return;
+
+        const generateNextDates = () => {
+            const nextDates = [];
+            let currentCheckDate = new Date();
+            let count = 0;
+            const maxDaysToCheck = 14; // check next 2 weeks
+            const requiredDates = 4;
+
+            while (nextDates.length < requiredDates && count < maxDaysToCheck) {
+                const dayName = format(currentCheckDate, "EEEE");
+                // If doctor has availability days defined, filter by them. Otherwise assume all days.
+                if (!doctor.availability?.days || doctor.availability.days.includes(dayName)) {
+                    nextDates.push(new Date(currentCheckDate));
+                }
+                currentCheckDate = addDays(currentCheckDate, 1);
+                count++;
+            }
+            setAvailableDates(nextDates);
+
+            // Auto-select first available date
+            if (nextDates.length > 0) {
+                setDate(nextDates[0]);
+            }
+        };
+
+        generateNextDates();
+    }, [doctor]);
+
+
     // Fetch Booked Slots when Date changes
     useEffect(() => {
         if (!id || !doctor) return;
@@ -77,16 +110,14 @@ export default function DoctorDetailsScreen() {
         const { days, startTime, endTime } = doctor.availability;
         const currentDayName = format(date, "EEEE"); // Monday, Tuesday...
 
-        if (!days || !days.includes(currentDayName)) {
-            setAvailableSlots([]); // Not working today
+        if (days && !days.includes(currentDayName)) {
+            setAvailableSlots([]); // Not working today (Double check vs UI)
             return;
         }
 
         // Generate hourly slots
         const slots = [];
         // Simple generator assuming generic format "09:00 AM"
-        // For robustness, usually we parse time properly. Here we reuse the predefined TIMES list index logic or simple generation
-        // Let's rely on string comparison logic matching the Profile defined list for consistency in this MVP
         const TIMES = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM"];
 
         let startIndex = TIMES.indexOf(startTime);
@@ -152,7 +183,6 @@ export default function DoctorDetailsScreen() {
             router.replace("/(tabs)/appointments");
         } catch (error: any) {
             Alert.alert("Booking Failed", error.message);
-            // Rollback slot if needed? For MVP we assume success if first write passed or handle err
         } finally {
             setLoading(false);
         }
@@ -229,20 +259,33 @@ export default function DoctorDetailsScreen() {
                 </View>
 
                 {/* Date Selection */}
-                <View style={styles.section}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={[styles.section, { paddingRight: 0 }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: 20 }}>
                         <Text style={styles.sectionTitle}>Select Date</Text>
                         <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-                            <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Change</Text>
+                            <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Calendar</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.dateDisplay}>
-                        <View style={styles.dateIcon}>
-                            <Ionicons name="calendar" size={24} color={Colors.white} />
-                        </View>
-                        <Text style={styles.dateText}>{format(date, "EEEE, d MMMM yyyy")}</Text>
-                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20, paddingTop: 10 }}>
+                        {availableDates.map((item, index) => {
+                            const isSelected = format(date, "yyyy-MM-dd") === format(item, "yyyy-MM-dd");
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.dateCard, isSelected && styles.selectedDateCard]}
+                                    onPress={() => setDate(item)}
+                                >
+                                    <Text style={[styles.dateDay, isSelected && styles.selectedDateText]}>
+                                        {format(item, "EEE")}
+                                    </Text>
+                                    <Text style={[styles.dateNum, isSelected && styles.selectedDateText]}>
+                                        {format(item, "d")}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
 
                     {showDatePicker && (
                         <DateTimePicker
@@ -261,7 +304,7 @@ export default function DoctorDetailsScreen() {
                     {availableSlots.length === 0 ? (
                         <View style={styles.emptySlots}>
                             <Ionicons name="close-circle-outline" size={40} color="#ccc" />
-                            <Text style={{ color: '#999', marginTop: 10 }}>Doctor is not available on this day.</Text>
+                            <Text style={{ color: '#999', marginTop: 10 }}>Doctor is not available currently.</Text>
                         </View>
                     ) : (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 10 }}>
@@ -406,24 +449,35 @@ const styles = StyleSheet.create({
         color: Colors.textSecondary,
         lineHeight: 22,
     },
-    dateDisplay: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.primary,
-        padding: 15,
+    // Updated Date Styling
+    dateCard: {
+        width: 60,
+        height: 70,
         borderRadius: 15,
-        marginTop: 10,
+        borderWidth: 1,
+        borderColor: '#EEE',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+        backgroundColor: '#FFF'
     },
-    dateIcon: {
-        marginRight: 15,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        padding: 8,
-        borderRadius: 10,
+    selectedDateCard: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary
     },
-    dateText: {
-        color: Colors.white,
-        fontSize: 16,
+    dateDay: {
+        fontSize: 12,
+        color: '#999',
+        fontWeight: '600',
+        marginBottom: 5
+    },
+    dateNum: {
+        fontSize: 18,
         fontWeight: 'bold',
+        color: '#333'
+    },
+    selectedDateText: {
+        color: '#FFF'
     },
     timeChip: {
         paddingHorizontal: 20,

@@ -4,7 +4,8 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts, OpenSans_400Regular, OpenSans_700Bold } from "@expo-google-fonts/open-sans";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import AnimatedSplashScreen from "../components/AnimatedSplashScreen";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -31,14 +32,28 @@ export default function RootLayout() {
     OpenSans_700Bold,
   });
 
+  const [appReady, setAppReady] = useState(false);
+  const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
+
   useEffect(() => {
-    if (loaded || error) {
+    if (error) throw error;
+  }, [error]);
+
+  useEffect(() => {
+    if (loaded) {
+      // Create a small delay or ensure native splash hides only when we are ready to show our custom one
+      setAppReady(true);
       SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [loaded]);
 
-  if (!loaded && !error) {
-    return null;
+  if (!appReady || !splashAnimationFinished) {
+    if (appReady && !splashAnimationFinished) {
+      return (
+        <AnimatedSplashScreen onAnimationFinish={() => setSplashAnimationFinished(true)} />
+      );
+    }
+    return null; // Keep showing native splash until fonts/appReady is true
   }
 
   return (

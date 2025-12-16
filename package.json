@@ -1,5 +1,5 @@
 {
-  "name": "app-doctor",
+  "name": "doc-on-call",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
