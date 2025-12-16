@@ -118,8 +118,8 @@ export default function DoctorDashboard() {
     }
 
     // Using Pastel Colors to match Patient Side Theme
-    const renderStatCard = (icon: any, label: string, value: string | number, bgColor: string, iconColor: string) => (
-        <View style={[styles.statCard, { backgroundColor: bgColor }]}>
+    const renderStatCard = (icon: any, label: string, value: string | number, bgColor: string, iconColor: string, onPress?: () => void) => (
+        <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.7 : 1} style={[styles.statCard, { backgroundColor: bgColor }]}>
             <View style={[styles.iconCircle, { backgroundColor: 'rgba(255,255,255,0.6)' }]}>
                 <Ionicons name={icon} size={24} color={iconColor} />
             </View>
@@ -127,7 +127,7 @@ export default function DoctorDashboard() {
                 <Text style={[styles.statValue, { color: iconColor }]}>{value}</Text>
                 <Text style={styles.statLabel}>{label}</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     // 3. Approval Check
@@ -174,7 +174,7 @@ export default function DoctorDashboard() {
                 {/* Stats Row */}
                 <View style={styles.statsContainer}>
                     {renderStatCard("people", "Patients", stats.patients, "#E3F2FD", "#1976D2")}
-                    {renderStatCard("star", "Rating", stats.rating, "#FFF8E1", "#FBC02D")}
+                    {renderStatCard("star", "Rating", stats.rating, "#FFF8E1", "#FBC02D", () => router.push("/doctor/feedback"))}
                     {renderStatCard("briefcase", "Experience", stats.experience, "#E8F5E9", "#388E3C")}
                 </View>
 

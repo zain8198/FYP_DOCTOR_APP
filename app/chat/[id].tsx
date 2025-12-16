@@ -42,6 +42,9 @@ export default function ChatScreen() {
         ? [currentUserId, targetId].sort().join('_')
         : `temp_${targetId}`;
 
+    const [otherUserImage, setOtherUserImage] = useState(image as string);
+    const [myImage, setMyImage] = useState(auth.currentUser?.photoURL || null);
+
     useEffect(() => {
         if (!currentUserId) return;
 
@@ -64,8 +67,48 @@ export default function ChatScreen() {
             Alert.alert("Error", "Failed to load messages: " + error.message);
         });
 
+        const fetchImages = async () => {
+            try {
+                const { get } = await import('firebase/database');
+
+                // 1. Fetch Target User Image (Other Person)
+                // Try 'users' first
+                let userRef = ref(db, `users/${targetId}`);
+                let snap = await get(userRef);
+                if (snap.exists() && snap.val().image) {
+                    setOtherUserImage(snap.val().image);
+                } else {
+                    // Try 'doctors'
+                    let docRef = ref(db, `doctors/${targetId}`);
+                    snap = await get(docRef);
+                    if (snap.exists() && snap.val().image) {
+                        setOtherUserImage(snap.val().image);
+                    }
+                }
+
+                // 2. Fetch My Image (Current User) to fix own avatar
+                // Try 'doctors' first (assuming I might be a doctor)
+                let myDocRef = ref(db, `doctors/${currentUserId}`);
+                let mySnap = await get(myDocRef);
+                if (mySnap.exists() && mySnap.val().image) {
+                    setMyImage(mySnap.val().image);
+                } else {
+                    // Try 'users'
+                    let myUserRef = ref(db, `users/${currentUserId}`);
+                    mySnap = await get(myUserRef);
+                    if (mySnap.exists() && mySnap.val().image) {
+                        setMyImage(mySnap.val().image);
+                    }
+                }
+
+            } catch (err) {
+                console.log("Error fetching images:", err);
+            }
+        }
+        fetchImages();
+
         return () => unsubscribe();
-    }, [chatId, currentUserId]);
+    }, [chatId, currentUserId, targetId]);
 
     const sendMessage = async () => {
         if (inputText.trim().length === 0) return;
@@ -100,14 +143,14 @@ export default function ChatScreen() {
     const renderItem = ({ item }: { item: Message }) => {
         const isMyMessage = item.senderId === currentUserId;
 
-        // Context: If I am the doctor (in Doctor App), my fallback is default_doctor.jpg
-        const currentUserImageSource = auth.currentUser?.photoURL
-            ? { uri: auth.currentUser.photoURL }
-            : require('../../assets/images/default_doctor.jpg');
+        // Use generic avatar for everyone to avoid "fake user" look
+        const currentUserImageSource = myImage
+            ? { uri: myImage }
+            : require('../../assets/images/default_avatar.jpg');
 
         // Other user is Patient (passed via params or fallback)
-        const otherUserImageSource = image
-            ? { uri: image as string }
+        const otherUserImageSource = otherUserImage
+            ? { uri: otherUserImage }
             : require('../../assets/images/default_avatar.jpg');
 
         return (
