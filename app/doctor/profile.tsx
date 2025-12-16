@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Image, Platform, SafeAreaView } from "react-native";
-import { Text, Avatar, Button, TextInput, ActivityIndicator } from "react-native-paper";
+import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Platform, SafeAreaView } from "react-native";
+import { Text, Avatar, Button, TextInput, ActivityIndicator, Chip } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { ref, get, update } from "firebase/database";
 import { signOut } from "firebase/auth";
@@ -17,9 +17,20 @@ export default function DoctorProfileScreen() {
         bio: '',
         image: ''
     });
+
+    // Availability State
+    const [availability, setAvailability] = useState({
+        days: [] as string[],
+        startTime: '09:00 AM',
+        endTime: '05:00 PM'
+    });
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const router = useRouter();
+
+    const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const TIMES = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM"];
 
     useEffect(() => {
         const fetchDoc = async () => {
@@ -36,6 +47,15 @@ export default function DoctorProfileScreen() {
                     bio: data.bio || '',
                     image: data.image || ''
                 });
+
+                // Load Availability
+                if (data.availability) {
+                    setAvailability({
+                        days: data.availability.days || [],
+                        startTime: data.availability.startTime || '09:00 AM',
+                        endTime: data.availability.endTime || '05:00 PM'
+                    });
+                }
             }
             setLoading(false);
         };
@@ -43,6 +63,11 @@ export default function DoctorProfileScreen() {
     }, []);
 
     const pickImage = async () => {
+        // ... (existing image picker logic - simplified for brevity if unchanged, but keeping for safety)
+        // For this edit, I will assume the previous implementation is fine and just include the new logic
+        // But since I'm replacing the whole file content structure or large chunks, I should be careful.
+        // Re-implementing the image logic exactly as before to avoid breaking it.
+
         // @ts-ignore
         const { status } = await import('expo-image-picker').then(mod => mod.requestMediaLibraryPermissionsAsync());
         if (status !== 'granted') {
@@ -98,7 +123,6 @@ export default function DoctorProfileScreen() {
         try {
             let imageUrl = profile.image;
 
-            // Check if it's a local URI (needs upload)
             if (profile.image && (profile.image.startsWith('file://') || profile.image.startsWith('content://'))) {
                 imageUrl = await uploadImageToCloudinary(profile.image);
             }
@@ -111,11 +135,9 @@ export default function DoctorProfileScreen() {
                 experience: profile.experience,
                 price: profile.price,
                 bio: profile.bio,
-                image: imageUrl
+                image: imageUrl,
+                availability: availability // Save availability
             });
-
-            // Update Auth Profile too if possible
-            // await updateProfile(auth.currentUser, { photoURL: imageUrl });
 
             Alert.alert("Success", "Profile updated successfully!");
         } catch (error) {
@@ -129,6 +151,14 @@ export default function DoctorProfileScreen() {
     const handleLogout = async () => {
         await signOut(auth);
         router.replace("/(auth)/doctor-login");
+    };
+
+    const toggleDay = (day: string) => {
+        if (availability.days.includes(day)) {
+            setAvailability({ ...availability, days: availability.days.filter(d => d !== day) });
+        } else {
+            setAvailability({ ...availability, days: [...availability.days, day] });
+        }
     };
 
     if (loading) {
@@ -159,7 +189,62 @@ export default function DoctorProfileScreen() {
 
                 {/* Form Section */}
                 <View style={styles.form}>
-                    <Text style={styles.sectionTitle}>Personal Details</Text>
+                    <Text style={styles.sectionTitle}>Availability Settings</Text>
+                    <View style={styles.availabilityCard}>
+                        <Text style={styles.subLabel}>Working Days</Text>
+                        <View style={styles.daysContainer}>
+                            {WEEKDAYS.map(day => (
+                                <Chip
+                                    key={day}
+                                    selected={availability.days.includes(day)}
+                                    onPress={() => toggleDay(day)}
+                                    style={[styles.dayChip, availability.days.includes(day) && styles.dayChipSelected]}
+                                    textStyle={{ fontSize: 12 }}
+                                    showSelectedOverlay
+                                >
+                                    {day.slice(0, 3)}
+                                </Chip>
+                            ))}
+                        </View>
+
+                        <Text style={styles.subLabel}>Working Hours</Text>
+                        <View style={styles.timeRow}>
+                            <View style={{ flex: 1, marginRight: 10 }}>
+                                <Text style={{ marginBottom: 5, color: Colors.textSecondary }}>Start Time</Text>
+                                {/* Simple implementation: Using chips or just cycling for now? 
+                                    Better: A simplified Scroll/Select approach or just text inputs if we trust format.
+                                    Let's use a simple horizontal scroll of options for now to be safe and UI friendly.
+                                */}
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#f5f5f5', padding: 8, borderRadius: 8 }}>
+                                    {TIMES.map(t => (
+                                        <TouchableOpacity key={t} onPress={() => setAvailability({ ...availability, startTime: t })} style={{ marginRight: 15 }}>
+                                            <Text style={{
+                                                color: availability.startTime === t ? Colors.primary : Colors.text,
+                                                fontWeight: availability.startTime === t ? 'bold' : 'normal'
+                                            }}>{t}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                        <View style={[styles.timeRow, { marginTop: 10 }]}>
+                            <View style={{ flex: 1, marginRight: 10 }}>
+                                <Text style={{ marginBottom: 5, color: Colors.textSecondary }}>End Time</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#f5f5f5', padding: 8, borderRadius: 8 }}>
+                                    {TIMES.map(t => (
+                                        <TouchableOpacity key={t} onPress={() => setAvailability({ ...availability, endTime: t })} style={{ marginRight: 15 }}>
+                                            <Text style={{
+                                                color: availability.endTime === t ? Colors.primary : Colors.text,
+                                                fontWeight: availability.endTime === t ? 'bold' : 'normal'
+                                            }}>{t}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    </View>
+
+                    <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Personal Details</Text>
 
                     <TextInput
                         label="Full Name"
@@ -303,5 +388,35 @@ const styles = StyleSheet.create({
         marginTop: 15,
         borderColor: Colors.error,
         borderRadius: 8,
+    },
+    availabilityCard: {
+        backgroundColor: '#FFF',
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#EEE',
+        marginBottom: 10
+    },
+    daysContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 15
+    },
+    dayChip: {
+        backgroundColor: '#F5F5F5',
+    },
+    dayChipSelected: {
+        backgroundColor: '#E3F2FD', // Light Blue/Primary
+        borderColor: Colors.primary
+    },
+    subLabel: {
+        fontWeight: '600',
+        marginBottom: 8,
+        color: '#555'
+    },
+    timeRow: {
+        flexDirection: 'row',
+        alignItems: 'center'
     }
 });

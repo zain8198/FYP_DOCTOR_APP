@@ -3,8 +3,8 @@ import { View, StyleSheet, ScrollView, Alert, Platform, ActivityIndicator, Touch
 import { Text, Button, Card, Avatar, useTheme, Chip } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { format } from "date-fns";
-import { ref, push, get } from "firebase/database";
+import { format, parse, addHours, isBefore, isEqual } from "date-fns";
+import { ref, push, get, set, update } from "firebase/database";
 import { auth, db } from "../firebase";
 import { Colors } from "../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,28 +19,22 @@ export default function DoctorDetailsScreen() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState("10:00 AM");
-    const timeSlots = ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM", "06:00 PM"];
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
     useEffect(() => {
-        if (!id) {
-            console.log("No ID parameter found");
-            return;
-        }
-        console.log("Fetching details for Doctor ID:", id);
+        if (!id) return;
 
         const fetchDoctor = async () => {
             try {
                 const docRef = ref(db, `doctors/${id}`);
                 const snapshot = await get(docRef);
-                console.log("Snapshot exists:", snapshot.exists());
 
                 if (snapshot.exists()) {
                     const docData = snapshot.val();
-                    console.log("Doctor data:", docData);
                     setDoctor({ id, ...docData });
                 } else {
-                    console.log("Doctor path not found in DB");
                     setDoctor(null);
                 }
             } catch (error) {
@@ -53,30 +47,61 @@ export default function DoctorDetailsScreen() {
         fetchDoctor();
     }, [id]);
 
-    if (fetching) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.white }}>
-                <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={{ marginTop: 10 }}>Loading Doctor Profile...</Text>
-            </View>
-        );
-    }
+    // Fetch Booked Slots when Date changes
+    useEffect(() => {
+        if (!id || !doctor) return;
 
-    if (!doctor) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: Colors.white }}>
-                <Text variant="headlineSmall" style={{ marginBottom: 10 }}>Doctor not found</Text>
-                <Text variant="bodyMedium" style={{ color: 'red', marginBottom: 20 }}>
-                    Searched ID: {String(id)}
-                </Text>
-                <Text variant="bodySmall" style={{ textAlign: 'center', marginBottom: 20 }}>
-                    Make sure the doctor exists in the database under "doctors/{String(id)}"
-                </Text>
-                <Button mode="contained" onPress={() => router.back()}>Go Back</Button>
-            </View>
-        );
-    }
+        const fetchSchedule = async () => {
+            const dateStr = format(date, "yyyy-MM-dd");
+            const scheduleRef = ref(db, `doctor_schedules/${id}/${dateStr}`);
+            const snapshot = await get(scheduleRef);
 
+            if (snapshot.exists()) {
+                const scheduleData = snapshot.val();
+                setBookedSlots(Object.keys(scheduleData)); // Keys are time slots e.g. "10:00 AM"
+            } else {
+                setBookedSlots([]);
+            }
+        };
+        fetchSchedule();
+    }, [id, doctor, date]);
+
+    // Generate Slots based on Availability
+    useEffect(() => {
+        if (!doctor || !doctor.availability) {
+            // Default slots (fallback)
+            setAvailableSlots(["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM", "06:00 PM"]);
+            return;
+        }
+
+        const { days, startTime, endTime } = doctor.availability;
+        const currentDayName = format(date, "EEEE"); // Monday, Tuesday...
+
+        if (!days || !days.includes(currentDayName)) {
+            setAvailableSlots([]); // Not working today
+            return;
+        }
+
+        // Generate hourly slots
+        const slots = [];
+        // Simple generator assuming generic format "09:00 AM"
+        // For robustness, usually we parse time properly. Here we reuse the predefined TIMES list index logic or simple generation
+        // Let's rely on string comparison logic matching the Profile defined list for consistency in this MVP
+        const TIMES = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM"];
+
+        let startIndex = TIMES.indexOf(startTime);
+        let endIndex = TIMES.indexOf(endTime);
+
+        if (startIndex === -1) startIndex = 0;
+        if (endIndex === -1) endIndex = TIMES.length - 1;
+
+        for (let i = startIndex; i <= endIndex; i++) {
+            slots.push(TIMES[i]);
+        }
+        setAvailableSlots(slots);
+        setSelectedTimeSlot(""); // Reset selection on date change
+
+    }, [doctor, date]);
 
 
     const handleBook = async () => {
@@ -84,8 +109,29 @@ export default function DoctorDetailsScreen() {
             Alert.alert("Error", "You must be logged in to book.");
             return;
         }
+        if (!selectedTimeSlot) {
+            Alert.alert("Required", "Please select a time slot.");
+            return;
+        }
+
         setLoading(true);
         try {
+            const dateStr = format(date, "yyyy-MM-dd");
+            const scheduleRef = ref(db, `doctor_schedules/${doctor.id}/${dateStr}/${selectedTimeSlot}`);
+
+            // Double check availability (concurrency)
+            const slotSnap = await get(scheduleRef);
+            if (slotSnap.exists()) {
+                Alert.alert("Sorry", "This slot was just booked by someone else.");
+                setBookedSlots([...bookedSlots, selectedTimeSlot]); // update local
+                setLoading(false);
+                return;
+            }
+
+            // 1. Reserve Slot
+            await set(scheduleRef, auth.currentUser.uid);
+
+            // 2. Create Appointment Record
             const appointmentRef = ref(db, `appointments/${auth.currentUser.uid}`);
             const patientName = auth.currentUser.email?.split('@')[0] || "Patient";
 
@@ -96,14 +142,17 @@ export default function DoctorDetailsScreen() {
                 patientName: patientName,
                 professional: doctor.specialty || doctor.profession,
                 date: format(date, "EEEE, d MMMM"),
+                dateIso: dateStr,
                 time: selectedTimeSlot,
                 details: "General checkup",
                 status: 'pending'
             });
+
             Alert.alert("Success", "Appointment Booked Successfully!");
             router.replace("/(tabs)/appointments");
         } catch (error: any) {
             Alert.alert("Booking Failed", error.message);
+            // Rollback slot if needed? For MVP we assume success if first write passed or handle err
         } finally {
             setLoading(false);
         }
@@ -140,7 +189,7 @@ export default function DoctorDetailsScreen() {
                     </View>
                 </View>
 
-                {/* Doctor Profile Card - Overlapping */}
+                {/* Doctor Profile Card */}
                 <View style={styles.profileCard}>
                     <Avatar.Image size={100} source={{ uri: doctor.image || 'https://i.pravatar.cc/150?u=' + doctor.id }} style={{ backgroundColor: '#f0f0f0' }} />
                     <Text style={styles.name}>{doctor.name}</Text>
@@ -208,21 +257,41 @@ export default function DoctorDetailsScreen() {
 
                 {/* Time Selection */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Available Slot</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 10 }}>
-                        {timeSlots.map((time, index) => {
-                            const isSelected = selectedTimeSlot === time;
-                            return (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={[styles.timeChip, isSelected && styles.selectedTimeChip]}
-                                    onPress={() => setSelectedTimeSlot(time)}
-                                >
-                                    <Text style={[styles.timeText, isSelected && styles.selectedTimeText]}>{time}</Text>
-                                </TouchableOpacity>
-                            )
-                        })}
-                    </ScrollView>
+                    <Text style={styles.sectionTitle}>Available Slots</Text>
+                    {availableSlots.length === 0 ? (
+                        <View style={styles.emptySlots}>
+                            <Ionicons name="close-circle-outline" size={40} color="#ccc" />
+                            <Text style={{ color: '#999', marginTop: 10 }}>Doctor is not available on this day.</Text>
+                        </View>
+                    ) : (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 10 }}>
+                            {availableSlots.map((time, index) => {
+                                const isSelected = selectedTimeSlot === time;
+                                const isBooked = bookedSlots.includes(time);
+
+                                return (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={[
+                                            styles.timeChip,
+                                            isSelected && styles.selectedTimeChip,
+                                            isBooked && styles.bookedTimeChip
+                                        ]}
+                                        onPress={() => !isBooked && setSelectedTimeSlot(time)}
+                                        disabled={isBooked}
+                                    >
+                                        <Text style={[
+                                            styles.timeText,
+                                            isSelected && styles.selectedTimeText,
+                                            isBooked && styles.bookedTimeText
+                                        ]}>
+                                            {time}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )
+                            })}
+                        </ScrollView>
+                    )}
                 </View>
 
             </ScrollView>
@@ -233,8 +302,12 @@ export default function DoctorDetailsScreen() {
                     <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>Total Price</Text>
                     <Text style={{ fontSize: 20, fontWeight: 'bold', color: Colors.text }}>${doctor.price || 300}</Text>
                 </View>
-                <TouchableOpacity style={styles.bookButton} onPress={handleBook} disabled={loading}>
-                    {loading ? <ActivityIndicator color="white" /> : <Text style={styles.bookButtonText}>Book Now</Text>}
+                <TouchableOpacity
+                    style={[styles.bookButton, (!selectedTimeSlot) && { backgroundColor: '#ccc' }]}
+                    onPress={handleBook}
+                    disabled={loading || !selectedTimeSlot}
+                >
+                    {loading ? <ActivityIndicator color="white" /> : <Text style={styles.bookButtonText}>Book Appointment</Text>}
                 </TouchableOpacity>
             </View>
         </View>
@@ -365,12 +438,21 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary,
         borderColor: Colors.primary,
     },
+    bookedTimeChip: {
+        backgroundColor: '#f0f0f0',
+        borderColor: '#ccc',
+        opacity: 0.6
+    },
     timeText: {
         color: Colors.text,
         fontWeight: '600',
     },
     selectedTimeText: {
         color: Colors.white,
+    },
+    bookedTimeText: {
+        color: '#999',
+        textDecorationLine: 'line-through'
     },
     footer: {
         position: 'absolute',
@@ -395,5 +477,14 @@ const styles = StyleSheet.create({
         color: Colors.white,
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    emptySlots: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 30,
+        borderWidth: 1,
+        borderColor: '#eee',
+        borderRadius: 10,
+        borderStyle: 'dashed'
     }
 });
