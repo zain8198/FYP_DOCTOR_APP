@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, FlatList, StyleSheet, Image, ActivityIndicator, Alert, TouchableOpacity } from "react-native";
-import { Text, Avatar } from "react-native-paper";
+import { View, FlatList, StyleSheet, Image, ActivityIndicator, Alert, TouchableOpacity, Modal, ScrollView } from "react-native";
+import { Text, Avatar, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { ref, onValue, push, serverTimestamp, get, update, remove } from "firebase/database";
 import { auth, db } from "../../firebase";
 import { ReviewModal } from "../../components/ReviewModal";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
+import { SearchBar } from "../../components/home/SearchBar";
 
 export default function AppointmentsScreen() {
     const router = useRouter();
@@ -14,6 +15,12 @@ export default function AppointmentsScreen() {
     const [loading, setLoading] = useState(true);
     const [reviewModalVisible, setReviewModalVisible] = useState(false);
     const [selectedDoctor, setSelectedDoctor] = useState<{ name: string, id?: string } | null>(null);
+
+    // New State for Search & Filter
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');
+    const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
 
     const handleRatePress = (doctor: any) => {
         // Ensure we have a valid doctorId
@@ -48,6 +55,10 @@ export default function AppointmentsScreen() {
             await remove(appointmentRef);
             // Optional: You could also save a record of cancelled appointments elsewhere
             Alert.alert("Cancelled", "Appointment has been cancelled successfully.");
+            // close details modal if open and it's the same appointment
+            if (selectedAppointment?.id === appointmentId) {
+                setDetailsModalVisible(false);
+            }
         } catch (error: any) {
             Alert.alert("Error", "Failed to cancel appointment: " + error.message);
         }
@@ -109,7 +120,8 @@ export default function AppointmentsScreen() {
                         id: key,
                         ...data[key]
                     })) : [];
-                    setAppointments(appointmentList);
+                    // sort by date/time desc (basic sort)
+                    setAppointments(appointmentList.reverse());
                     setLoading(false);
                 }, (error) => {
                     console.error("Error fetching appointments:", error);
@@ -122,6 +134,35 @@ export default function AppointmentsScreen() {
 
         return () => unsubscribeAuth();
     }, []);
+
+    // Filter Logic
+    const filteredAppointments = appointments.filter(apt => {
+        // 1. Status Filter
+        const status = apt.status?.toLowerCase() || 'pending';
+        let matchesStatus = true;
+
+        if (activeTab === 'upcoming') {
+            matchesStatus = status === 'pending' || status === 'confirmed';
+        } else if (activeTab === 'completed') {
+            matchesStatus = status === 'completed';
+        } else if (activeTab === 'cancelled') {
+            matchesStatus = status === 'cancelled';
+        }
+
+        // 2. Search Filter
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+            apt.doctor?.toLowerCase().includes(query) ||
+            apt.professional?.toLowerCase().includes(query) ||
+            apt.date?.includes(query);
+
+        return matchesStatus && matchesSearch;
+    });
+
+    const openDetails = (appointment: any) => {
+        setSelectedAppointment(appointment);
+        setDetailsModalVisible(true);
+    };
 
     if (loading) {
         return (
@@ -141,40 +182,81 @@ export default function AppointmentsScreen() {
         }
     };
 
+    const renderFilterTab = (key: string, label: string) => (
+        <TouchableOpacity
+            style={[
+                styles.filterTab,
+                activeTab === key && styles.activeFilterTab
+            ]}
+            onPress={() => setActiveTab(key as any)}
+        >
+            <Text style={[
+                styles.filterTabText,
+                activeTab === key && styles.activeFilterTabText
+            ]}>
+                {label}
+            </Text>
+        </TouchableOpacity>
+    );
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>My Appointments</Text>
             </View>
 
-            {appointments.length === 0 ? (
+            <View style={{ paddingHorizontal: 20 }}>
+                <SearchBar
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+            </View>
+
+            <View style={{ marginBottom: 15 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                    {renderFilterTab('all', 'All')}
+                    {renderFilterTab('upcoming', 'Upcoming')}
+                    {renderFilterTab('completed', 'Completed')}
+                    {renderFilterTab('cancelled', 'Cancelled')}
+                </ScrollView>
+            </View>
+
+            {filteredAppointments.length === 0 ? (
                 <View style={styles.emptyState}>
                     <Avatar.Icon size={80} icon="calendar-remove" style={{ backgroundColor: '#f0f0f0' }} color={Colors.textSecondary} />
-                    <Text style={{ marginTop: 20, color: Colors.textSecondary, fontSize: 16 }}>No appointments found.</Text>
-                    <TouchableOpacity
-                        style={styles.findDoctorButton}
-                        onPress={() => router.push("/(tabs)/home" as any)} // Navigate to Home
-                    >
-                        <Text style={styles.findDoctorText}>Find a Doctor</Text>
-                    </TouchableOpacity>
+                    <Text style={{ marginTop: 20, color: Colors.textSecondary, fontSize: 16 }}>
+                        {searchQuery ? "No matching appointments found." : "No appointments found."}
+                    </Text>
+                    {activeTab === 'all' && !searchQuery && (
+                        <TouchableOpacity
+                            style={styles.findDoctorButton}
+                            onPress={() => router.push("/(tabs)/home" as any)}
+                        >
+                            <Text style={styles.findDoctorText}>Find a Doctor</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             ) : (
                 <FlatList
-                    data={appointments}
+                    data={filteredAppointments}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ padding: 20 }}
+                    contentContainerStyle={{ padding: 20, paddingBottom: 80 }}
                     renderItem={({ item }) => {
                         const statusStyle = getStatusColor(item.status || 'pending');
                         const isCancelled = item.status?.toLowerCase() === 'cancelled';
                         const isCompleted = item.status?.toLowerCase() === 'completed';
 
                         return (
-                            <View style={styles.card}>
+                            <TouchableOpacity
+                                activeOpacity={0.9}
+                                onPress={() => openDetails(item)}
+                                style={styles.card}
+                            >
                                 <View style={styles.cardHeader}>
                                     <View style={styles.doctorInfo}>
                                         <Avatar.Text
                                             size={50}
-                                            label={item.doctor.substring(0, 2).toUpperCase()}
+                                            label={item.doctor?.substring(0, 2).toUpperCase() || "DR"}
                                             style={{ backgroundColor: Colors.primary }}
                                             color="white"
                                         />
@@ -217,24 +299,137 @@ export default function AppointmentsScreen() {
                                         </TouchableOpacity>
                                     )}
 
-                                    {isCancelled && (
-                                        <View style={[styles.cancelButton, { backgroundColor: '#FFEBEE', borderColor: 'transparent' }]}>
-                                            <Text style={{ color: '#C62828', fontWeight: 'bold' }}>Cancelled</Text>
-                                        </View>
-                                    )}
+                                    {/* Just a spacer if only one button or view details hint */}
+                                    {/* We can act this entire card as view details, so maybe no extra button is cleaner */}
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         );
                     }}
                 />
             )}
 
+            {/* REVIEW MODAL */}
             <ReviewModal
                 visible={reviewModalVisible}
                 onClose={() => setReviewModalVisible(false)}
                 onSubmit={submitReview}
                 doctorName={selectedDoctor?.name || 'Doctor'}
             />
+
+            {/* DETAILS MODAL */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={detailsModalVisible}
+                onRequestClose={() => setDetailsModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        {/* Fixed Header */}
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Appointment Details</Text>
+                            <TouchableOpacity onPress={() => setDetailsModalVisible(false)} style={styles.closeButton}>
+                                <Ionicons name="close" size={24} color={Colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        {/* Scrollable Body */}
+                        <ScrollView style={styles.modalBody} contentContainerStyle={{ paddingBottom: 20 }}>
+                            {selectedAppointment && (
+                                <>
+                                    <View style={styles.detailSection}>
+                                        <View style={styles.doctorProfileRow}>
+                                            <Avatar.Text size={56} label={selectedAppointment.doctor?.substring(0, 2).toUpperCase()} style={{ backgroundColor: Colors.primary }} color='white' />
+                                            <View style={{ marginLeft: 15, flex: 1 }}>
+                                                <Text style={styles.detailDoctorName}>Dr. {selectedAppointment.doctor}</Text>
+                                                <Text style={styles.detailSpecialty}>{selectedAppointment.professional}</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.infoGrid}>
+                                        <View style={styles.infoItem}>
+                                            <View style={styles.iconBox}>
+                                                <Ionicons name="calendar" size={20} color={Colors.primary} />
+                                            </View>
+                                            <View>
+                                                <Text style={styles.infoLabel}>Date</Text>
+                                                <Text style={styles.infoValue}>{selectedAppointment.date}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.infoItem}>
+                                            <View style={styles.iconBox}>
+                                                <Ionicons name="time" size={20} color={Colors.primary} />
+                                            </View>
+                                            <View>
+                                                <Text style={styles.infoLabel}>Time</Text>
+                                                <Text style={styles.infoValue}>{selectedAppointment.time || "10:00 AM"}</Text>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.detailSection}>
+                                        <Text style={styles.sectionHeader}>Status</Text>
+                                        <View style={[styles.statusBadgeLarge, { backgroundColor: getStatusColor(selectedAppointment.status).bg }]}>
+                                            <Ionicons name={getStatusColor(selectedAppointment.status).icon as any} size={20} color={getStatusColor(selectedAppointment.status).text} />
+                                            <Text style={[styles.statusTextLarge, { color: getStatusColor(selectedAppointment.status).text }]}>
+                                                {selectedAppointment.status || "Pending"}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    {selectedAppointment.details && (
+                                        <View style={styles.detailSection}>
+                                            <Text style={styles.sectionHeader}>Rason for Visit</Text>
+                                            <View style={styles.noteBox}>
+                                                <Text style={styles.noteText}>{selectedAppointment.details}</Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </>
+                            )}
+                        </ScrollView>
+
+                        {/* Fixed Footer */}
+                        {selectedAppointment && (
+                            <View style={styles.modalFooter}>
+                                {selectedAppointment.status === 'pending' || selectedAppointment.status === 'confirmed' ? (
+                                    <Button
+                                        mode="contained"
+                                        buttonColor={Colors.error}
+                                        onPress={() => handleCancelPress(selectedAppointment.id)}
+                                        style={styles.fullWidthButton}
+                                        icon="close-circle-outline"
+                                    >
+                                        Cancel Appointment
+                                    </Button>
+                                ) : selectedAppointment.status === 'completed' ? (
+                                    <Button
+                                        mode="contained"
+                                        buttonColor={Colors.primary}
+                                        onPress={() => { setDetailsModalVisible(false); handleRatePress(selectedAppointment); }}
+                                        style={styles.fullWidthButton}
+                                        icon="star-outline"
+                                    >
+                                        Rate Doctor
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        mode="outlined"
+                                        onPress={() => setDetailsModalVisible(false)}
+                                        style={styles.fullWidthButton}
+                                        textColor={Colors.textSecondary}
+                                    >
+                                        Close
+                                    </Button>
+                                )}
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -254,6 +449,23 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: "bold",
         color: Colors.text,
+    },
+    filterTab: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#F0F0F0',
+        marginRight: 10,
+    },
+    activeFilterTab: {
+        backgroundColor: Colors.primary,
+    },
+    filterTabText: {
+        color: Colors.textSecondary,
+        fontWeight: '600',
+    },
+    activeFilterTabText: {
+        color: 'white',
     },
     card: {
         backgroundColor: Colors.white,
@@ -362,5 +574,126 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 25,
+        borderTopRightRadius: 25,
+        height: '80%', // Fixed height as requested
+        display: 'flex',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: Colors.text,
+    },
+    closeButton: {
+        position: 'absolute',
+        right: 20,
+        top: 20,
+    },
+    modalBody: {
+        flex: 1,
+        padding: 20,
+    },
+    modalFooter: {
+        padding: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+        backgroundColor: 'white',
+    },
+    detailSection: {
+        marginBottom: 25,
+    },
+    doctorProfileRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    detailDoctorName: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: Colors.text,
+    },
+    detailSpecialty: {
+        fontSize: 14,
+        color: Colors.textSecondary,
+        marginTop: 4,
+    },
+    infoGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 15,
+        marginBottom: 25,
+    },
+    infoItem: {
+        width: '47%',
+        backgroundColor: '#F9FAFB',
+        padding: 12,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(47, 128, 98, 0.1)', // Primary with opacity
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    infoLabel: {
+        fontSize: 12,
+        color: Colors.textSecondary,
+    },
+    infoValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.text,
+    },
+    sectionHeader: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: Colors.text,
+        marginBottom: 10,
+    },
+    statusBadgeLarge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+    },
+    statusTextLarge: {
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginLeft: 8,
+    },
+    noteBox: {
+        backgroundColor: '#F5F5F5',
+        padding: 15,
+        borderRadius: 12,
+    },
+    noteText: {
+        color: Colors.text,
+        lineHeight: 20,
+    },
+    fullWidthButton: {
+        borderRadius: 12,
+        paddingVertical: 6,
     }
 });

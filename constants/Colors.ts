@@ -10,4 +10,5 @@ export const Colors = {
   rating: '#FBC02D',
   white: '#FFFFFF',
   iconBg: '#EAF4F0',
+  error: '#FF5252',
 };

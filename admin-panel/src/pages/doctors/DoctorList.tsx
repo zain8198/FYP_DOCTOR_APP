@@ -16,6 +16,17 @@ interface Doctor {
     experience?: string;
     bio?: string;
     image?: string;
+    rating?: number;
+    price?: number;
+    phone?: string;
+    phoneNumber?: string;
+    address?: string;
+    location?: string;
+    patients?: number;
+    clinic?: string;
+    consultationFee?: string;
+    licenseNumber?: string;
+    licenseDocumentUrl?: string;
 }
 
 export default function DoctorList() {
@@ -174,8 +185,31 @@ export default function DoctorList() {
                         </div>
 
                         <div style={styles.detailSection}>
+                            <strong>Price:</strong> ${selectedDoctor.consultationFee || selectedDoctor.price || 'N/A'} <br />
+                            <strong>Rating:</strong> {selectedDoctor.rating || 'N/A'} ⭐ <br />
+                            <strong>Patients:</strong> {selectedDoctor.patients || 'N/A'} <br />
+                            <strong>Phone:</strong> {selectedDoctor.phone || selectedDoctor.phoneNumber || 'N/A'} <br />
+                            <strong>Clinic:</strong> {selectedDoctor.clinic || 'N/A'} <br />
+                            <strong>License No:</strong> {selectedDoctor.licenseNumber || 'N/A'} <br />
+                            <strong>Address:</strong> {selectedDoctor.address || selectedDoctor.location || 'N/A'} <br />
+                            <strong>Experience:</strong> {selectedDoctor.experience || 'N/A'} Years <br />
                             <strong>Email:</strong> {selectedDoctor.email}
                         </div>
+
+                        {selectedDoctor.licenseDocumentUrl && (
+                            <div style={styles.detailSection}>
+                                <strong>License Document:</strong>
+                                <div style={{ marginTop: '10px' }}>
+                                    <a href={selectedDoctor.licenseDocumentUrl} target="_blank" rel="noopener noreferrer">
+                                        <img
+                                            src={selectedDoctor.licenseDocumentUrl}
+                                            alt="Medical License"
+                                            style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid #E2E8F0', maxHeight: '300px', objectFit: 'contain' }}
+                                        />
+                                    </a>
+                                </div>
+                            </div>
+                        )}
 
                         <div style={styles.modalActions}>
                             {selectedDoctor.status !== 'rejected' && (
