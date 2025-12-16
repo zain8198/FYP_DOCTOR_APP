@@ -144,9 +144,8 @@ export default function ProfileScreen() {
         <View style={styles.container}>
             <View style={styles.headerBackground} />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-                {/* Profile Header */}
+            {/* Fixed Header Section */}
+            <View style={styles.staticHeaderContainer}>
                 <View style={styles.profileHeader}>
                     <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
                         {image ? (
@@ -164,8 +163,10 @@ export default function ProfileScreen() {
                     <Text style={styles.headerName}>{name || "User"}</Text>
                     <Text style={styles.headerEmail}>{email}</Text>
                 </View>
+            </View>
 
-                {/* Form Inputs */}
+            {/* Scrollable Form Inputs */}
+            <ScrollView contentContainerStyle={styles.formScrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.formContainer}>
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Full Name</Text>
@@ -250,15 +251,22 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)',
         padding: 8,
         borderRadius: 20,
+        zIndex: 10
     },
-    scrollContent: {
+    staticHeaderContainer: {
         paddingTop: 60,
-        paddingBottom: 120,
         paddingHorizontal: 20,
+        marginBottom: 10,
+        zIndex: 1
+    },
+    formScrollContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 100, // Extra space for scrolling past bottom
+        paddingTop: 10
     },
     profileHeader: {
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 10,
     },
     avatarContainer: {
         position: 'relative',
