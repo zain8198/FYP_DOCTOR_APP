@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, SafeAreaView, StatusBar, Platform, TouchableOpacity, Text, Alert, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ref, onValue, set, remove, get } from 'firebase/database';
 import { db, auth } from '../../firebase';
@@ -26,6 +26,7 @@ const CATEGORIES = [
 
 export default function HomeScreen() {
     const router = useRouter();
+    const { category } = useLocalSearchParams();
     const [doctors, setDoctors] = useState<any[]>([]);
     const [filteredDoctors, setFilteredDoctors] = useState<any[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
@@ -62,6 +63,12 @@ export default function HomeScreen() {
 
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        if (category) {
+            setSelectedCategory(category as string);
+        }
+    }, [category]);
 
     useEffect(() => {
         let result = doctors;
@@ -153,6 +160,21 @@ export default function HomeScreen() {
                             <Text style={styles.actionText}>Lab Test</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* AI Feature Banner - NEW */}
+                    <TouchableOpacity
+                        style={styles.aiBanner}
+                        onPress={() => router.push('/ai-symptom-checker')}
+                    >
+                        <View style={styles.aiContent}>
+                            <Text style={styles.aiBadge}>NEW ✨</Text>
+                            <Text style={styles.aiTitle}>AI Symptom Checker</Text>
+                            <Text style={styles.aiDesc}>Not feeling well? Let AI analyze your symptoms.</Text>
+                        </View>
+                        <View style={styles.aiIconBox}>
+                            <Ionicons name="sparkles" size={28} color="#fff" />
+                        </View>
+                    </TouchableOpacity>
 
                     {/* Health Tips Carousel */}
                     <View style={styles.sectionHeader}>
@@ -330,5 +352,54 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         resizeMode: 'contain',
+    },
+    // AI Banner Styles
+    aiBanner: {
+        backgroundColor: '#6C63FF', // A distinct purple/indigo for AI
+        borderRadius: 15,
+        padding: 20,
+        marginVertical: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        shadowColor: "#6C63FF",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 6,
+    },
+    aiContent: {
+        flex: 1,
+    },
+    aiBadge: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 4,
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+        marginBottom: 5,
+        overflow: 'hidden',
+    },
+    aiTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 2,
+    },
+    aiDesc: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.9)',
+    },
+    aiIconBox: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 15,
     }
 });
