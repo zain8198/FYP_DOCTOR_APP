@@ -131,6 +131,16 @@ export default function AppointmentsScreen() {
         );
     }
 
+    const getStatusColor = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'pending': return { bg: '#FFF3E0', text: '#EF6C00', icon: 'time-outline' };
+            case 'confirmed': return { bg: '#E3F2FD', text: '#2196F3', icon: 'checkmark-circle-outline' };
+            case 'completed': return { bg: '#E8F5E9', text: '#2E7D32', icon: 'checkmark-done-outline' };
+            case 'cancelled': return { bg: '#FFEBEE', text: '#C62828', icon: 'close-circle-outline' };
+            default: return { bg: '#F5F5F5', text: '#757575', icon: 'help-circle-outline' };
+        }
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -153,50 +163,69 @@ export default function AppointmentsScreen() {
                     data={appointments}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={{ padding: 20 }}
-                    renderItem={({ item }) => (
-                        <View style={styles.card}>
-                            <View style={styles.cardHeader}>
-                                <View style={styles.doctorInfo}>
-                                    <Avatar.Text
-                                        size={50}
-                                        label={item.doctor.substring(0, 2).toUpperCase()}
-                                        style={{ backgroundColor: Colors.primary }}
-                                        color="white"
-                                    />
-                                    <View style={{ marginLeft: 15 }}>
-                                        <Text style={styles.doctorName}>Dr. {item.doctor}</Text>
-                                        <Text style={styles.specialty}>{item.professional || "Specialist"}</Text>
+                    renderItem={({ item }) => {
+                        const statusStyle = getStatusColor(item.status || 'pending');
+                        const isCancelled = item.status?.toLowerCase() === 'cancelled';
+                        const isCompleted = item.status?.toLowerCase() === 'completed';
+
+                        return (
+                            <View style={styles.card}>
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.doctorInfo}>
+                                        <Avatar.Text
+                                            size={50}
+                                            label={item.doctor.substring(0, 2).toUpperCase()}
+                                            style={{ backgroundColor: Colors.primary }}
+                                            color="white"
+                                        />
+                                        <View style={{ marginLeft: 15 }}>
+                                            <Text style={styles.doctorName}>Dr. {item.doctor}</Text>
+                                            <Text style={styles.specialty}>{item.professional || "Specialist"}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={[styles.statusChip, { backgroundColor: statusStyle.bg }]}>
+                                        <Ionicons name={statusStyle.icon as any} size={16} color={statusStyle.text} />
+                                        <Text style={[styles.statusText, { color: statusStyle.text }]}>
+                                            {item.status || "Pending"}
+                                        </Text>
                                     </View>
                                 </View>
-                                <View style={styles.statusChip}>
-                                    <Ionicons name="time-outline" size={16} color={Colors.primary} />
-                                    <Text style={styles.statusText}>{item.meeting || "Consultation"}</Text>
+
+                                <View style={styles.divider} />
+
+                                <View style={styles.dateRow}>
+                                    <Ionicons name="calendar-outline" size={20} color={Colors.textSecondary} />
+                                    <Text style={styles.dateText}>{item.date} | {item.time || "10:00 AM"}</Text>
+                                </View>
+
+                                <View style={styles.actionRow}>
+                                    {!isCancelled && !isCompleted && (
+                                        <TouchableOpacity
+                                            style={styles.cancelButton}
+                                            onPress={() => handleCancelPress(item.id)}
+                                        >
+                                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                                        </TouchableOpacity>
+                                    )}
+
+                                    {isCompleted && (
+                                        <TouchableOpacity
+                                            style={styles.rateButton}
+                                            onPress={() => handleRatePress(item)}
+                                        >
+                                            <Text style={styles.rateButtonText}>Rate Doctor</Text>
+                                        </TouchableOpacity>
+                                    )}
+
+                                    {isCancelled && (
+                                        <View style={[styles.cancelButton, { backgroundColor: '#FFEBEE', borderColor: 'transparent' }]}>
+                                            <Text style={{ color: '#C62828', fontWeight: 'bold' }}>Cancelled</Text>
+                                        </View>
+                                    )}
                                 </View>
                             </View>
-
-                            <View style={styles.divider} />
-
-                            <View style={styles.dateRow}>
-                                <Ionicons name="calendar-outline" size={20} color={Colors.textSecondary} />
-                                <Text style={styles.dateText}>{item.date} | {item.time || "10:00 AM"}</Text>
-                            </View>
-
-                            <View style={styles.actionRow}>
-                                <TouchableOpacity
-                                    style={styles.cancelButton}
-                                    onPress={() => handleCancelPress(item.id)}
-                                >
-                                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.rateButton}
-                                    onPress={() => handleRatePress(item)}
-                                >
-                                    <Text style={styles.rateButtonText}>Rate Doctor</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
+                        );
+                    }}
                 />
             )}
 
