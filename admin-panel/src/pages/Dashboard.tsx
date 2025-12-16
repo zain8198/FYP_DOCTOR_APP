@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../components/layout/Layout";
-import { Users, UserCheck, DollarSign, Calendar } from "lucide-react";
+import { Users, UserCheck, Calendar } from "lucide-react";
 import { ref, get } from "firebase/database";
 import { db } from "../firebase";
 
@@ -8,8 +8,7 @@ export default function Dashboard() {
     const [stats, setStats] = useState({
         patients: 0,
         doctors: 0,
-        appointments: 0,
-        revenue: 0
+        appointments: 0
     });
     const [loading, setLoading] = useState(true);
 
@@ -27,7 +26,6 @@ export default function Dashboard() {
                 // Fetch Appointments & Revenue
                 const aptSnap = await get(ref(db, 'appointments'));
                 let aptCount = 0;
-                let totalRevenue = 0;
 
                 if (aptSnap.exists()) {
                     const data = aptSnap.val();
@@ -36,14 +34,6 @@ export default function Dashboard() {
                         if (userApts) {
                             const apts = Object.values(userApts);
                             aptCount += apts.length;
-
-                            apts.forEach((apt: any) => {
-                                // Try to find price or amount, default to 0
-                                const price = Number(apt.price || apt.amount || apt.fee || 0);
-                                if (!isNaN(price)) {
-                                    totalRevenue += price;
-                                }
-                            });
                         }
                     });
                 }
@@ -51,8 +41,7 @@ export default function Dashboard() {
                 setStats({
                     patients: usersCount,
                     doctors: doctorsCount,
-                    appointments: aptCount,
-                    revenue: totalRevenue
+                    appointments: aptCount
                 });
             } catch (error) {
                 console.error("Error fetching dashboard stats:", error);
@@ -87,13 +76,6 @@ export default function Dashboard() {
                     icon={Calendar}
                     color="#F59E0B"
                     trend={loading ? "-" : "Total Bookings"}
-                />
-                <StatCard
-                    title="Estimated Revenue"
-                    value={loading ? "..." : `$${stats.revenue.toLocaleString()}`}
-                    icon={DollarSign}
-                    color="#8B5CF6"
-                    trend={loading ? "-" : "Gross Volume"}
                 />
             </div>
 
