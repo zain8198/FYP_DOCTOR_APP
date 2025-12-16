@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Image } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Image, KeyboardAvoidingView, Platform } from "react-native";
 import { TextInput, Button, Text, useTheme, ActivityIndicator } from "react-native-paper";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -155,167 +155,173 @@ export default function DoctorRegisterScreen() {
 
     return (
         <ThemedBackground style={styles.container}>
-            <View style={styles.header}>
-                <Text variant="headlineMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                    Doctor Registration
-                </Text>
-                <Text variant="titleSmall" style={{ color: theme.colors.secondary }}>
-                    Join our trusted medical network
-                </Text>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.section}>
-                    <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Personal Information</Text>
-                    <TextInput
-                        label="Full Name *"
-                        value={name}
-                        onChangeText={setName}
-                        mode="outlined"
-                        left={<TextInput.Icon icon="account" />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Email *"
-                        value={email}
-                        onChangeText={setEmail}
-                        mode="outlined"
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        left={<TextInput.Icon icon="email" />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Password *"
-                        value={password}
-                        onChangeText={setPassword}
-                        mode="outlined"
-                        secureTextEntry={!showPassword}
-                        left={<TextInput.Icon icon="lock" />}
-                        right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Phone Number *"
-                        value={phone}
-                        onChangeText={setPhone}
-                        mode="outlined"
-                        keyboardType="phone-pad"
-                        left={<TextInput.Icon icon="phone" />}
-                        style={styles.input}
-                    />
-                </View>
-
-                <View style={styles.section}>
-                    <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Professional Details</Text>
-
-                    <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.8}>
-                        <TextInput
-                            label="Specialty *"
-                            value={specialty}
-                            mode="outlined"
-                            editable={false}
-                            left={<TextInput.Icon icon="doctor" />}
-                            right={<TextInput.Icon icon="chevron-down" />}
-                            style={styles.input}
-                            pointerEvents="none"
-                        />
-                    </TouchableOpacity>
-
-                    <TextInput
-                        label="Experience (Years) *"
-                        value={experience}
-                        onChangeText={setExperience}
-                        mode="outlined"
-                        keyboardType="numeric"
-                        left={<TextInput.Icon icon="briefcase" />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Medical License Number *"
-                        value={license}
-                        onChangeText={setLicense}
-                        mode="outlined"
-                        left={<TextInput.Icon icon="badge-account" />}
-                        style={styles.input}
-                    />
-                </View>
-
-                <View style={styles.section}>
-                    <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Clinic & Fees</Text>
-                    <TextInput
-                        label="Clinic / Hospital Name *"
-                        value={clinic}
-                        onChangeText={setClinic}
-                        mode="outlined"
-                        left={<TextInput.Icon icon="hospital-building" />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Consultation Fee (PKR) *"
-                        value={fee}
-                        onChangeText={setFee}
-                        mode="outlined"
-                        keyboardType="numeric"
-                        left={<TextInput.Icon icon="cash" />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Short Bio"
-                        value={bio}
-                        onChangeText={setBio}
-                        mode="outlined"
-                        multiline
-                        numberOfLines={3}
-                        left={<TextInput.Icon icon="text-short" />}
-                        style={styles.input}
-                    />
-                </View>
-
-                <View style={styles.section}>
-                    <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Verification</Text>
-                    <Text variant="bodySmall" style={{ marginBottom: 10, color: theme.colors.secondary }}>
-                        Please upload a clear image of your Medical License / PMDC Certificate.
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+            >
+                <View style={styles.header}>
+                    <Text variant="headlineMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                        Doctor Registration
                     </Text>
-
-                    <TouchableOpacity onPress={pickDocument} style={[styles.uploadButton, { borderColor: theme.colors.primary }]}>
-                        {documentUri ? (
-                            <Image source={{ uri: documentUri }} style={styles.uploadedImage} />
-                        ) : (
-                            <View style={{ alignItems: 'center' }}>
-                                <MaterialCommunityIcons name="cloud-upload" size={40} color={theme.colors.primary} />
-                                <Text style={{ color: theme.colors.primary, marginTop: 5 }}>Tap to Upload Document</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-
-                    {documentUri && (
-                        <Button mode="text" onPress={() => setDocumentUri(null)} textColor="red">
-                            Remove Document
-                        </Button>
-                    )}
+                    <Text variant="titleSmall" style={{ color: theme.colors.secondary }}>
+                        Join our trusted medical network
+                    </Text>
                 </View>
 
-                <Button
-                    mode="contained"
-                    onPress={handleSignUp}
-                    loading={loading}
-                    style={styles.submitButton}
-                    contentStyle={{ height: 50 }}
-                    labelStyle={{ fontSize: 16, fontWeight: 'bold' }}
-                >
-                    Register as Doctor
-                </Button>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    {/* ... (rest of the form remains same, just inside KeyboardAvoidingView) ... */}
+                    <View style={styles.section}>
+                        <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Personal Information</Text>
+                        <TextInput
+                            label="Full Name *"
+                            value={name}
+                            onChangeText={setName}
+                            mode="outlined"
+                            left={<TextInput.Icon icon="account" />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Email *"
+                            value={email}
+                            onChangeText={setEmail}
+                            mode="outlined"
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            left={<TextInput.Icon icon="email" />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Password *"
+                            value={password}
+                            onChangeText={setPassword}
+                            mode="outlined"
+                            secureTextEntry={!showPassword}
+                            left={<TextInput.Icon icon="lock" />}
+                            right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Phone Number *"
+                            value={phone}
+                            onChangeText={setPhone}
+                            mode="outlined"
+                            keyboardType="phone-pad"
+                            left={<TextInput.Icon icon="phone" />}
+                            style={styles.input}
+                        />
+                    </View>
 
-                <View style={styles.footer}>
-                    <Text variant="bodyMedium">Already registered? </Text>
-                    <TouchableOpacity onPress={() => router.replace("/(auth)/doctor-login")}>
-                        <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                            Log In
+                    <View style={styles.section}>
+                        <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Professional Details</Text>
+
+                        <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.8}>
+                            <TextInput
+                                label="Specialty *"
+                                value={specialty}
+                                mode="outlined"
+                                editable={false}
+                                left={<TextInput.Icon icon="doctor" />}
+                                right={<TextInput.Icon icon="chevron-down" />}
+                                style={styles.input}
+                                pointerEvents="none"
+                            />
+                        </TouchableOpacity>
+
+                        <TextInput
+                            label="Experience (Years) *"
+                            value={experience}
+                            onChangeText={setExperience}
+                            mode="outlined"
+                            keyboardType="numeric"
+                            left={<TextInput.Icon icon="briefcase" />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Medical License Number *"
+                            value={license}
+                            onChangeText={setLicense}
+                            mode="outlined"
+                            left={<TextInput.Icon icon="badge-account" />}
+                            style={styles.input}
+                        />
+                    </View>
+
+                    <View style={styles.section}>
+                        <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Clinic & Fees</Text>
+                        <TextInput
+                            label="Clinic / Hospital Name *"
+                            value={clinic}
+                            onChangeText={setClinic}
+                            mode="outlined"
+                            left={<TextInput.Icon icon="hospital-building" />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Consultation Fee (PKR) *"
+                            value={fee}
+                            onChangeText={setFee}
+                            mode="outlined"
+                            keyboardType="numeric"
+                            left={<TextInput.Icon icon="cash" />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Short Bio"
+                            value={bio}
+                            onChangeText={setBio}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={3}
+                            left={<TextInput.Icon icon="text-short" />}
+                            style={styles.input}
+                        />
+                    </View>
+
+                    <View style={styles.section}>
+                        <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Verification</Text>
+                        <Text variant="bodySmall" style={{ marginBottom: 10, color: theme.colors.secondary }}>
+                            Please upload a clear image of your Medical License / PMDC Certificate.
                         </Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+
+                        <TouchableOpacity onPress={pickDocument} style={[styles.uploadButton, { borderColor: theme.colors.primary }]}>
+                            {documentUri ? (
+                                <Image source={{ uri: documentUri }} style={styles.uploadedImage} />
+                            ) : (
+                                <View style={{ alignItems: 'center' }}>
+                                    <MaterialCommunityIcons name="cloud-upload" size={40} color={theme.colors.primary} />
+                                    <Text style={{ color: theme.colors.primary, marginTop: 5 }}>Tap to Upload Document</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        {documentUri && (
+                            <Button mode="text" onPress={() => setDocumentUri(null)} textColor="red">
+                                Remove Document
+                            </Button>
+                        )}
+                    </View>
+
+                    <Button
+                        mode="contained"
+                        onPress={handleSignUp}
+                        loading={loading}
+                        style={styles.submitButton}
+                        contentStyle={{ height: 50 }}
+                        labelStyle={{ fontSize: 16, fontWeight: 'bold' }}
+                    >
+                        Register as Doctor
+                    </Button>
+
+                    <View style={styles.footer}>
+                        <Text variant="bodyMedium">Already registered? </Text>
+                        <TouchableOpacity onPress={() => router.replace("/(auth)/doctor-login")}>
+                            <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                                Log In
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Specialty Selection Modal */}
             <Modal

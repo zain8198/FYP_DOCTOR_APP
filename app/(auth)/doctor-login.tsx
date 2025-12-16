@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { TextInput, Button, Text, useTheme } from "react-native-paper";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "expo-router";
@@ -62,62 +62,67 @@ export default function DoctorLoginScreen() {
 
     return (
         <ThemedBackground style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text variant="displaySmall" style={{ color: theme.colors.primary, fontWeight: 'bold', marginBottom: 8 }}>
-                        Doctor Portal
-                    </Text>
-                    <Text variant="titleMedium" style={{ color: theme.colors.secondary, opacity: 0.8 }}>
-                        Login to manage appointments
-                    </Text>
-                </View>
-
-                <View style={styles.form}>
-                    <TextInput
-                        label="Email"
-                        value={email}
-                        onChangeText={setEmail}
-                        mode="outlined"
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        left={<TextInput.Icon icon="doctor" />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Password"
-                        value={password}
-                        onChangeText={setPassword}
-                        mode="outlined"
-                        secureTextEntry={!showPassword}
-                        left={<TextInput.Icon icon="lock-outline" />}
-                        right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
-                        style={styles.input}
-                    />
-
-                    <Button
-                        mode="contained"
-                        onPress={handleLogin}
-                        loading={loading}
-                        style={styles.button}
-                        contentStyle={styles.buttonContent}
-                        labelStyle={styles.buttonLabel}
-                    >
-                        Login
-                    </Button>
-
-                    <TouchableOpacity onPress={() => router.push("/(auth)/doctor-register")} style={styles.link}>
-                        <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                            New Doctor? Verify & Register
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+            >
+                <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
+                    <View style={styles.header}>
+                        <Text variant="displaySmall" style={{ color: theme.colors.primary, fontWeight: 'bold', marginBottom: 8 }}>
+                            Doctor Portal
                         </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => router.replace("/(auth)/login")} style={styles.subLink}>
-                        <Text style={{ color: theme.colors.secondary }}>
-                            Not a doctor? User Login
+                        <Text variant="titleMedium" style={{ color: theme.colors.secondary, opacity: 0.8 }}>
+                            Login to manage appointments
                         </Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+                    </View>
+
+                    <View style={styles.form}>
+                        <TextInput
+                            label="Email"
+                            value={email}
+                            onChangeText={setEmail}
+                            mode="outlined"
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            left={<TextInput.Icon icon="doctor" />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            mode="outlined"
+                            secureTextEntry={!showPassword}
+                            left={<TextInput.Icon icon="lock-outline" />}
+                            right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
+                            style={styles.input}
+                        />
+
+                        <Button
+                            mode="contained"
+                            onPress={handleLogin}
+                            loading={loading}
+                            style={styles.button}
+                            contentStyle={styles.buttonContent}
+                            labelStyle={styles.buttonLabel}
+                        >
+                            Login
+                        </Button>
+
+                        <TouchableOpacity onPress={() => router.push("/(auth)/doctor-register")} style={styles.link}>
+                            <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                                New Doctor? Verify & Register
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => router.replace("/(auth)/login")} style={styles.subLink}>
+                            <Text style={{ color: theme.colors.secondary }}>
+                                Not a doctor? User Login
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </ThemedBackground>
     );
 }
