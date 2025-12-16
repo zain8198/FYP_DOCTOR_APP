@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, FlatList, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar, ActivityIndicator } from "react-native";
+import { View, StyleSheet, FlatList, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar, ActivityIndicator, Alert } from "react-native";
 import { Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { auth } from "../../firebase";
 import { useRouter } from "expo-router";
+
+// Reuse Gemini API Key (same as symptom checker)
+const GEMINI_API_KEY = "AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M";
 
 interface Message {
     id: string;
@@ -35,7 +38,7 @@ export default function ChatBotScreen() {
     const userImage = auth.currentUser?.photoURL || 'https://i.pravatar.cc/150?img=12';
     const botImage = 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png';
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!inputText.trim()) return;
 
         const userMsg: Message = {
@@ -49,22 +52,21 @@ export default function ChatBotScreen() {
         setInputText("");
         setIsTyping(true);
 
-        setTimeout(() => {
-            const response = generateResponse(userMsg.text);
-            const botMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                text: response.text,
-                sender: 'bot',
-                createdAt: Date.now(),
-                action: response.action,
-                actionLabel: response.actionLabel
-            };
-            setMessages(prev => [...prev, botMsg]);
-            setIsTyping(false);
-        }, 1500);
+        // AI Response (async)
+        const response = await generateAIResponse(userMsg.text);
+        const botMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            text: response.text,
+            sender: 'bot',
+            createdAt: Date.now(),
+            action: response.action,
+            actionLabel: response.actionLabel
+        };
+        setMessages(prev => [...prev, botMsg]);
+        setIsTyping(false);
     };
 
-    const handleSuggestionPress = (text: string) => {
+    const handleSuggestionPress = async (text: string) => {
         const userMsg: Message = {
             id: Date.now().toString(),
             text: text,
@@ -74,35 +76,89 @@ export default function ChatBotScreen() {
         setMessages(prev => [...prev, userMsg]);
         setIsTyping(true);
 
-        setTimeout(() => {
-            const response = generateResponse(text);
-            const botMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                text: response.text,
-                sender: 'bot',
-                createdAt: Date.now(),
-                action: response.action,
-                actionLabel: response.actionLabel
-            };
-            setMessages(prev => [...prev, botMsg]);
-            setIsTyping(false);
-        }, 1500);
+        const response = await generateAIResponse(text);
+        const botMsg: Message = {
+            id: (Date.now() + 1).toString(),
+            text: response.text,
+            sender: 'bot',
+            createdAt: Date.now(),
+            action: response.action,
+            actionLabel: response.actionLabel
+        };
+        setMessages(prev => [...prev, botMsg]);
+        setIsTyping(false);
     };
 
     const handleActionPress = (action: string) => {
         // Business Logic: Redirect to booking to drive revenue
         if (action === 'book_dentist') {
             router.push({ pathname: "/(tabs)/home", params: { category: "Dentist" } } as any);
-        } else if (action === 'book_derma') {
+        } else if (action === 'book_derma' || action === 'book_dermatologist') {
             router.push({ pathname: "/(tabs)/home", params: { category: "Dermatologist" } } as any);
-        } else if (action === 'book_cardio') {
+        } else if (action === 'book_cardio' || action === 'book_cardiologist') {
             router.push({ pathname: "/(tabs)/home", params: { category: "Cardiologist" } } as any);
-        } else if (action === 'book_general') {
+        } else if (action === 'book_general' || action === 'book_general_physician') {
             router.push({ pathname: "/(tabs)/home", params: { category: "General Physician" } } as any);
+        } else if (action.startsWith('book_')) {
+            // Generic handler for AI-generated specialists
+            const specialist = action.replace('book_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            router.push({ pathname: "/(tabs)/home", params: { category: specialist } } as any);
         }
     };
 
-    const generateResponse = (input: string): { text: string, action?: string, actionLabel?: string } => {
+    const generateAIResponse = async (input: string): Promise<{ text: string, action?: string, actionLabel?: string }> => {
+        try {
+            const prompt = `You are a medical triage assistant for a doctor booking app.
+
+User Query: "${input}"
+
+Task:
+1. Provide brief, helpful health advice (2-3 sentences max)
+2. If symptoms are mentioned, recommend ONE specialist from: General Physician, Cardiologist, Dentist, Dermatologist, Gynecologist, Neurologist, Orthopedic, Pediatrician, Psychiatrist, ENT Specialist, Eye Specialist
+3. Return ONLY valid JSON:
+
+{
+  "message": "Your helpful response here",
+  "specialist": "Specialist Name" (optional, only if medical issue detected)
+}`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error.message || "API Error");
+            }
+
+            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+            const aiResult = JSON.parse(cleanJson);
+
+            // Build response with action button if specialist recommended
+            if (aiResult.specialist) {
+                return {
+                    text: aiResult.message,
+                    action: `book_${aiResult.specialist.toLowerCase().replace(/\s+/g, '_')}`,
+                    actionLabel: `Find ${aiResult.specialist} 🩺`
+                };
+            }
+
+            return { text: aiResult.message };
+
+        } catch (error: any) {
+            console.error("AI Error:", error);
+            // Fallback to rule-based response
+            return generateFallbackResponse(input);
+        }
+    };
+
+    const generateFallbackResponse = (input: string): { text: string, action?: string, actionLabel?: string } => {
         const lower = input.toLowerCase();
 
         // Smart Business Logic: Detect symptoms and suggest specialists
@@ -149,7 +205,7 @@ export default function ChatBotScreen() {
             return { text: "Hello! How can I assist you with your health?" };
         }
 
-        return { text: "I'm still learning! You can search for specialized doctors in the Home tab." };
+        return { text: "I'm here to help! You can search for specialized doctors in the Home tab or describe your symptoms." };
     };
 
     const renderItem = ({ item }: { item: Message }) => {

@@ -9,6 +9,9 @@ import { auth, db } from "../firebase";
 import { Colors } from "../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
+// Reuse Gemini API Key
+const GEMINI_API_KEY = "AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M";
+
 export default function DoctorDetailsScreen() {
     const { id } = useLocalSearchParams();
     const theme = useTheme();
@@ -23,6 +26,8 @@ export default function DoctorDetailsScreen() {
     const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+    const [reviewSummary, setReviewSummary] = useState<string | null>(null);
+    const [loadingSummary, setLoadingSummary] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -133,6 +138,75 @@ export default function DoctorDetailsScreen() {
         setSelectedTimeSlot(""); // Reset selection on date change
 
     }, [doctor, date]);
+
+    // Fetch and Generate Review Summary
+    useEffect(() => {
+        if (!id) return;
+
+        const fetchAndSummarizeReviews = async () => {
+            setLoadingSummary(true);
+            try {
+                const reviewsRef = ref(db, `reviews/${id}`);
+                const snapshot = await get(reviewsRef);
+
+                console.log("Review Summary Debug:", {
+                    doctorId: id,
+                    reviewsExist: snapshot.exists(),
+                    reviewCount: snapshot.exists() ? Object.keys(snapshot.val()).length : 0
+                });
+
+                if (!snapshot.exists()) {
+                    console.log("No reviews found for doctor:", id);
+                    setReviewSummary(null);
+                    setLoadingSummary(false);
+                    return;
+                }
+
+                const reviewsData = snapshot.val();
+                console.log("Raw reviews data:", reviewsData);
+
+                // Extract review texts - check multiple possible field names
+                const reviewTexts = Object.values(reviewsData).map((r: any) => {
+                    return r.review || r.feedback || r.comment || r.text || r.message || "";
+                }).filter(Boolean);
+
+                console.log("Review texts:", reviewTexts);
+
+                if (reviewTexts.length === 0) {
+                    console.log("No valid review texts found");
+                    setReviewSummary(null);
+                    setLoadingSummary(false);
+                    return;
+                }
+
+                // Generate AI Summary
+                const prompt = `Summarize these doctor reviews in 2-3 concise bullet points. Highlight key strengths and any concerns:\n\n${reviewTexts.join('\n\n')}`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+
+                const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                console.log("AI Summary generated:", summary);
+                setReviewSummary(summary || "Unable to generate summary.");
+
+            } catch (error) {
+                console.error("Review Summary Error:", error);
+                setReviewSummary(null);
+            } finally {
+                setLoadingSummary(false);
+            }
+        };
+
+        fetchAndSummarizeReviews();
+    }, [id]);
 
 
     const handleBook = async () => {
@@ -257,6 +331,28 @@ export default function DoctorDetailsScreen() {
                         {doctor.bio || "Experienced specialist dedicated to providing top-quality healthcare. Focuses on patient comfort and effectively diagnosing various conditions."}
                     </Text>
                 </View>
+
+                {/* AI Review Summary */}
+                {loadingSummary ? (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Patient Reviews 💬</Text>
+                        <View style={styles.summaryCard}>
+                            <ActivityIndicator size="small" color={Colors.primary} />
+                            <Text style={{ marginLeft: 10, color: Colors.textSecondary }}>Generating AI summary...</Text>
+                        </View>
+                    </View>
+                ) : reviewSummary ? (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Patient Reviews 💬</Text>
+                        <View style={styles.summaryCard}>
+                            <View style={styles.aiTag}>
+                                <Ionicons name="sparkles" size={14} color="#6C63FF" />
+                                <Text style={styles.aiTagText}>AI Summary</Text>
+                            </View>
+                            <Text style={styles.summaryText}>{reviewSummary}</Text>
+                        </View>
+                    </View>
+                ) : null}
 
                 {/* Date Selection */}
                 <View style={[styles.section, { paddingRight: 0 }]}>
@@ -540,5 +636,34 @@ const styles = StyleSheet.create({
         borderColor: '#eee',
         borderRadius: 10,
         borderStyle: 'dashed'
+    },
+    summaryCard: {
+        backgroundColor: '#F8F9FF',
+        borderRadius: 15,
+        padding: 15,
+        borderWidth: 1,
+        borderColor: '#E0E0FF',
+    },
+    aiTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EEE9FF',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginBottom: 8,
+        alignSelf: 'flex-start',
+    },
+    aiTagText: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#6C63FF',
+        marginLeft: 4,
+    },
+    summaryText: {
+        fontSize: 14,
+        color: Colors.text,
+        lineHeight: 22,
+        flex: 1,
     }
 });
