@@ -274,12 +274,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     pageTitle: {
         fontSize: '28px',
         fontWeight: 700,
-        color: '#1E293B',
+        color: 'var(--foreground)',
         margin: 0,
         letterSpacing: '-0.5px'
     },
     pageSubtitle: {
-        color: '#64748B',
+        color: 'var(--muted-foreground)',
         fontSize: '15px',
         marginTop: '6px'
     },
@@ -294,9 +294,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     searchBox: {
         display: 'flex',
         alignItems: 'center',
-        backgroundColor: 'white',
-        border: '1px solid #E2E8F0',
-        borderRadius: '12px',
+        backgroundColor: 'var(--card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
         padding: '10px 16px',
         gap: '10px',
         width: '300px',
@@ -308,27 +308,27 @@ const styles: { [key: string]: React.CSSProperties } = {
         outline: 'none',
         fontSize: '14px',
         width: '100%',
-        color: '#334155'
+        color: 'var(--foreground)'
     },
     select: {
-        border: '1px solid #E2E8F0',
-        borderRadius: '12px',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
         padding: '10px 16px 10px 36px',
         fontSize: '14px',
         outline: 'none',
-        backgroundColor: 'white',
-        color: '#334155',
+        backgroundColor: 'var(--card)',
+        color: 'var(--card-foreground)',
         appearance: 'none',
         cursor: 'pointer',
         boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
         fontWeight: 500
     },
     tableCard: {
-        backgroundColor: 'white',
-        borderRadius: '16px',
+        backgroundColor: 'var(--card)',
+        borderRadius: 'var(--radius)',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
         overflow: 'hidden',
-        border: '1px solid #F1F5F9'
+        border: '1px solid var(--border)'
     },
     table: {
         width: '100%',
@@ -338,30 +338,31 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     th: {
         padding: '20px 24px',
-        backgroundColor: '#F8FAFC',
-        color: '#475569',
+        backgroundColor: 'var(--muted)',
+        color: 'var(--muted-foreground)',
         fontWeight: 600,
         fontSize: '13px',
         textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-        borderBottom: '1px solid #E2E8F0'
+        letterSpacing: '0.05em',
+        borderBottom: '1px solid var(--border)'
     },
     td: {
         padding: '20px 24px',
-        borderBottom: '1px solid #F1F5F9',
-        color: '#334155',
+        borderBottom: '1px solid var(--border)',
+        color: 'var(--card-foreground)',
         fontSize: '14px',
         verticalAlign: 'middle'
     },
     tr: {
         transition: 'background-color 0.1s ease',
+        cursor: 'default'
     },
     avatarPlaceholder: {
         width: '40px',
         height: '40px',
         borderRadius: '12px',
-        backgroundColor: '#EFF6FF',
-        color: '#3B82F6',
+        backgroundColor: 'var(--secondary)',
+        color: 'var(--primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -370,16 +371,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     doctorName: {
         fontWeight: 600,
-        color: '#0F172A',
+        color: 'var(--card-foreground)',
         fontSize: '15px'
     },
     doctorSpecialty: {
-        color: '#64748B',
+        color: 'var(--muted-foreground)',
         fontSize: '13px'
     },
     patientName: {
         fontWeight: 500,
-        color: '#334155'
+        color: 'var(--card-foreground)'
     },
     dateTimeContainer: {
         display: 'flex',
@@ -390,7 +391,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         display: 'flex',
         alignItems: 'center',
         gap: '6px',
-        color: '#334155',
+        color: 'var(--card-foreground)',
         fontSize: '14px',
         fontWeight: 500
     },
@@ -398,7 +399,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         display: 'flex',
         alignItems: 'center',
         gap: '6px',
-        color: '#64748B',
+        color: 'var(--muted-foreground)',
         fontSize: '13px'
     },
     actionBtn: {
@@ -413,18 +414,18 @@ const styles: { [key: string]: React.CSSProperties } = {
         transition: 'all 0.2s ease'
     },
     btnSuccess: {
-        color: '#059669',
-        backgroundColor: '#ECFDF5',
-        border: '1px solid #D1FAE5'
+        color: 'var(--success)',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        border: '1px solid rgba(16, 185, 129, 0.2)'
     },
     btnDestructive: {
-        color: '#DC2626',
-        backgroundColor: '#FEF2F2',
-        border: '1px solid #FEE2E2'
+        color: 'var(--destructive)',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        border: '1px solid rgba(239, 68, 68, 0.2)'
     },
     btnInfo: {
-        color: '#3B82F6',
-        backgroundColor: '#EFF6FF',
-        border: '1px solid #DBEAFE'
+        color: 'var(--info)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        border: '1px solid rgba(59, 130, 246, 0.2)'
     }
 };

@@ -170,33 +170,78 @@ export default function Patients() {
 
 const styles: { [key: string]: React.CSSProperties } = {
     header: {
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '32px'
     },
     searchBox: {
-        display: 'flex', alignItems: 'center', backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', gap: '8px'
+        display: 'flex',
+        alignItems: 'center',
+        backgroundColor: 'var(--card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: '8px 12px',
+        gap: '8px',
+        width: '320px',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
     },
     input: {
-        border: 'none', outline: 'none', fontSize: '14px', width: '250px'
+        border: 'none',
+        outline: 'none',
+        fontSize: '14px',
+        width: '100%',
+        color: 'var(--foreground)'
     },
     tableContainer: {
-        backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden'
+        backgroundColor: 'var(--card)',
+        borderRadius: 'var(--radius)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        overflow: 'hidden',
+        border: '1px solid var(--border)'
     },
     table: {
-        width: '100%', borderCollapse: 'collapse', textAlign: 'left'
+        width: '100%',
+        borderCollapse: 'collapse',
+        textAlign: 'left'
     },
     th: {
-        padding: '16px 24px', backgroundColor: '#F8FAFC', color: '#64748B', fontWeight: 600, fontSize: '14px', borderBottom: '1px solid #E2E8F0'
+        padding: '16px 24px',
+        backgroundColor: 'var(--muted)',
+        color: 'var(--muted-foreground)',
+        fontWeight: 600,
+        fontSize: '13px',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        borderBottom: '1px solid var(--border)'
     },
     td: {
-        padding: '16px 24px', borderBottom: '1px solid #E2E8F0', color: '#334155'
+        padding: '16px 24px',
+        borderBottom: '1px solid var(--border)',
+        color: 'var(--card-foreground)',
+        fontSize: '14px'
     },
     tr: {
-        cursor: 'pointer'
+        cursor: 'default',
+        transition: 'background-color 0.1s'
     },
     badge: {
-        backgroundColor: '#E3F2FD', color: '#1976D2', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600
+        backgroundColor: 'var(--secondary)',
+        color: 'var(--secondary-foreground)',
+        padding: '4px 12px',
+        borderRadius: '24px',
+        fontSize: '12px',
+        fontWeight: 500
     },
     actionBtn: {
-        border: 'none', background: 'none', cursor: 'pointer', padding: '4px'
+        border: 'none',
+        background: 'none',
+        cursor: 'pointer',
+        padding: '8px',
+        borderRadius: '6px',
+        transition: 'background-color 0.2s',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
     }
 };

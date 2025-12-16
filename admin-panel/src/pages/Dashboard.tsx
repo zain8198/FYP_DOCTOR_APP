@@ -111,15 +111,17 @@ function StatCard({ title, value, icon: Icon, color, trend }: any) {
 const styles: { [key: string]: React.CSSProperties } = {
     grid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: '24px'
     },
     card: {
-        backgroundColor: 'white',
+        backgroundColor: 'var(--card)',
         padding: '24px',
-        borderRadius: '12px',
+        borderRadius: 'var(--radius)',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        border: '1px solid #E2E8F0'
+        border: '1px solid var(--border)',
+        transition: 'all 0.2s',
+        cursor: 'default'
     },
     cardHeader: {
         display: 'flex',
@@ -128,37 +130,45 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     cardTitle: {
         fontSize: '14px',
-        color: '#64748B',
-        margin: '0 0 8px 0'
+        color: 'var(--muted-foreground)',
+        fontWeight: 500,
+        margin: '0 0 8px 0',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em'
     },
     cardValue: {
-        fontSize: '24px',
-        fontWeight: 'bold',
-        color: '#1E293B',
-        margin: 0
+        fontSize: '32px',
+        fontWeight: 700,
+        color: 'var(--card-foreground)',
+        margin: 0,
+        letterSpacing: '-0.025em'
     },
     iconBox: {
-        width: '48px',
-        height: '48px',
-        borderRadius: '12px',
+        width: '40px',
+        height: '40px',
+        borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        // Creating a subtle background based on the icon color passed in styles isn't strictly CSS variable compliant
+        // but keeps the dynamic nature. We'll simplify the box style.
     },
     cardFooter: {
         marginTop: '16px',
         display: 'flex',
         alignItems: 'center',
-        fontSize: '14px'
+        fontSize: '12px',
+        color: 'var(--muted-foreground)'
     },
     placeholderChart: {
-        height: '300px',
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        border: '1px solid #E2E8F0',
+        height: '400px',
+        backgroundColor: 'var(--card)',
+        borderRadius: 'var(--radius)',
+        border: '1px solid var(--border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: '16px'
+        marginTop: '24px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
     }
 };

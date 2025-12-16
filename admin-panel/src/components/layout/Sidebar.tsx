@@ -63,50 +63,61 @@ export default function Sidebar() {
 
 const styles: { [key: string]: React.CSSProperties } = {
     sidebar: {
-        width: '250px',
+        width: '260px',
         height: '100vh',
-        backgroundColor: '#1E293B', // Slate 800
-        color: 'white',
+        backgroundColor: '#0F172A', // Slate 900
+        color: '#F8FAFC',
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
         left: 0,
-        top: 0
+        top: 0,
+        boxShadow: '4px 0 24px rgba(0,0,0,0.2)',
+        zIndex: 50
     },
     logoContainer: {
-        padding: '24px',
-        borderBottom: '1px solid #334155'
+        padding: '24px 32px',
+        borderBottom: '1px solid #1E293B' // Slate 800
     },
     logo: {
         margin: 0,
         fontSize: '20px',
-        color: '#60A5FA' // Blue 400
+        fontWeight: 700,
+        color: '#F8FAFC',
+        letterSpacing: '-0.025em',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
     },
     nav: {
         flex: 1,
-        padding: '20px 0',
+        padding: '24px 16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '5px'
+        gap: '4px',
+        overflowY: 'auto'
     },
     link: {
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        padding: '12px 24px',
-        color: '#94A3B8',
+        padding: '12px 16px',
+        color: '#94A3B8', // Slate 400
         textDecoration: 'none',
-        transition: 'all 0.2s',
-        fontWeight: 500
+        transition: 'all 0.2s ease',
+        fontWeight: 500,
+        borderRadius: '8px',
+        fontSize: '14px'
     },
     activeLink: {
-        backgroundColor: '#334155',
-        color: 'white',
-        borderRight: '3px solid #60A5FA'
+        backgroundColor: '#1E293B', // Slate 800
+        color: '#F8FAFC', // Slate 50
+        fontWeight: 600
     },
     footer: {
-        padding: '20px',
-        borderTop: '1px solid #334155'
+        padding: '24px',
+        borderTop: '1px solid #1E293B',
+        backgroundColor: '#0F172A'
     },
     logoutBtn: {
         display: 'flex',
@@ -114,10 +125,13 @@ const styles: { [key: string]: React.CSSProperties } = {
         gap: '12px',
         background: 'none',
         border: 'none',
-        color: '#F87171', // Red 400
+        color: '#EF4444', // Red 500
         cursor: 'pointer',
-        fontSize: '16px',
+        fontSize: '14px',
+        fontWeight: 500,
         width: '100%',
-        padding: '10px'
+        padding: '12px 16px',
+        borderRadius: '8px',
+        transition: 'background-color 0.2s'
     }
 };

@@ -9,6 +9,8 @@ import Appointments from './pages/Appointments';
 import PrivateRoute from './components/common/PrivateRoute';
 import './App.css';
 
+import Settings from './pages/Settings';
+
 function App() {
   return (
     <Router>
@@ -48,6 +50,15 @@ function App() {
             element={
               <PrivateRoute>
                 <Appointments />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <Settings />
               </PrivateRoute>
             }
           />

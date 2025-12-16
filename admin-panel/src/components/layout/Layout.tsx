@@ -27,45 +27,57 @@ const styles: { [key: string]: React.CSSProperties } = {
     container: {
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#F1F5F9' // Slate 100
+        backgroundColor: '#F8FAFC' // Slate 50
     },
     main: {
         flex: 1,
-        marginLeft: '250px', // Sidebar width
+        marginLeft: '260px', // Matches new Sidebar width
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        minWidth: 0 // Prevents flex overflow issues
     },
     header: {
         height: '64px',
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(8px)',
         borderBottom: '1px solid #E2E8F0',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 32px'
+        padding: '0 40px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40
     },
     headerTitle: {
-        fontSize: '16px',
-        color: '#334155',
-        fontWeight: 600
+        fontSize: '14px',
+        color: '#64748B', // Slate 500
+        fontWeight: 500
     },
     headerProfile: {
         display: 'flex',
         alignItems: 'center'
     },
     avatar: {
-        width: '36px',
-        height: '36px',
-        backgroundColor: '#3B82F6',
+        width: '32px',
+        height: '32px',
+        backgroundColor: '#0F172A', // Slate 900
         borderRadius: '50%',
-        color: 'white',
+        color: '#F8FAFC',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontWeight: 'bold'
+        fontWeight: 600,
+        fontSize: '14px',
+        cursor: 'pointer',
+        transition: 'transform 0.2s',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
     },
     content: {
-        padding: '32px',
-        flex: 1
+        padding: '40px',
+        flex: 1,
+        maxWidth: '1600px',
+        margin: '0 auto',
+        width: '100%'
     }
 };
