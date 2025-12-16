@@ -7,12 +7,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 
+// Reuse Gemini API Key
+const GEMINI_API_KEY = "AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M";
+
 export default function DoctorDashboard() {
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [doctorProfile, setDoctorProfile] = useState<any>(null);
     const [stats, setStats] = useState({ patients: 0, experience: '3 Yrs', rating: 4.8 });
     const router = useRouter();
+    const [feedbackInsights, setFeedbackInsights] = useState<any>(null);
+    const [loadingInsights, setLoadingInsights] = useState(false);
 
     const handleStatusUpdate = async (patientId: string, appointmentId: string, newStatus: string) => {
         try {
@@ -109,6 +114,60 @@ export default function DoctorDashboard() {
         fetchData();
     }, []);
 
+    // Generate AI Feedback Insights
+    useEffect(() => {
+        if (!auth.currentUser) return;
+
+        const generateInsights = async () => {
+            setLoadingInsights(true);
+            try {
+                const reviewsRef = ref(db, `reviews/${auth.currentUser.uid}`);
+                const snapshot = await get(reviewsRef);
+
+                if (!snapshot.exists()) {
+                    setLoadingInsights(false);
+                    return;
+                }
+
+                const reviewsData = snapshot.val();
+                const reviewTexts = Object.values(reviewsData).map((r: any) =>
+                    r.review || r.feedback || r.comment || ""
+                ).filter(Boolean);
+
+                if (reviewTexts.length === 0) {
+                    setLoadingInsights(false);
+                    return;
+                }
+
+                const prompt = `Analyze these doctor reviews and provide actionable insights:\n\n${reviewTexts.join('\n\n')}\n\nReturn ONLY valid JSON:\n{\n  "strengths": ["Friendly", "Quick"],\n  "improvements": ["Wait time"],\n  "trend": "Positive"\n}`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+
+                const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                const insights = JSON.parse(cleanJson);
+
+                setFeedbackInsights(insights);
+            } catch (error) {
+                console.error("Insights Error:", error);
+                setFeedbackInsights(null);
+            } finally {
+                setLoadingInsights(false);
+            }
+        };
+
+        generateInsights();
+    }, []);
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -177,6 +236,43 @@ export default function DoctorDashboard() {
                     {renderStatCard("star", "Rating", stats.rating, "#FFF8E1", "#FBC02D", () => router.push("/doctor/feedback"))}
                     {renderStatCard("briefcase", "Experience", stats.experience, "#E8F5E9", "#388E3C")}
                 </View>
+
+                {/* AI Feedback Insights */}
+                {feedbackInsights && (
+                    <View style={styles.insightsCard}>
+                        <View style={styles.insightsHeader}>
+                            <Ionicons name="bulb" size={22} color="#6C63FF" />
+                            <Text style={styles.insightsTitle}>Patient Feedback Insights 💡</Text>
+                        </View>
+
+                        {feedbackInsights.strengths?.length > 0 && (
+                            <View style={styles.insightSection}>
+                                <View style={styles.insightLabel}>
+                                    <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                                    <Text style={styles.insightLabelText}>Strengths</Text>
+                                </View>
+                                <Text style={styles.insightText}>{feedbackInsights.strengths.join(', ')}</Text>
+                            </View>
+                        )}
+
+                        {feedbackInsights.improvements?.length > 0 && (
+                            <View style={styles.insightSection}>
+                                <View style={styles.insightLabel}>
+                                    <Ionicons name="alert-circle" size={16} color="#FF9800" />
+                                    <Text style={styles.insightLabelText}>Areas to Improve</Text>
+                                </View>
+                                <Text style={styles.insightText}>{feedbackInsights.improvements.join(', ')}</Text>
+                            </View>
+                        )}
+
+                        {feedbackInsights.trend && (
+                            <View style={styles.trendBadge}>
+                                <Ionicons name="trending-up" size={14} color="#2196F3" />
+                                <Text style={styles.trendText}>Overall: {feedbackInsights.trend}</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* Date / Section Header */}
                 <View style={styles.sectionHeader}>
@@ -440,4 +536,59 @@ const styles = StyleSheet.create({
         shadowRadius: 1.41,
         elevation: 2,
     },
+    insightsCard: {
+        backgroundColor: '#F8F9FF',
+        marginHorizontal: 20,
+        marginBottom: 25,
+        borderRadius: 16,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: '#E0E0FF',
+    },
+    insightsHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    insightsTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: Colors.text,
+        marginLeft: 8,
+    },
+    insightSection: {
+        marginBottom: 12,
+    },
+    insightLabel: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    insightLabelText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: Colors.textSecondary,
+        marginLeft: 6,
+    },
+    insightText: {
+        fontSize: 14,
+        color: Colors.text,
+        lineHeight: 20,
+    },
+    trendBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E3F2FD',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+        marginTop: 8,
+    },
+    trendText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#2196F3',
+        marginLeft: 6,
+    }
 });

@@ -9,6 +9,9 @@ import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { SearchBar } from "../../components/home/SearchBar";
 
+// Reuse Gemini API Key
+const GEMINI_API_KEY = "AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M";
+
 export default function AppointmentsScreen() {
     const router = useRouter();
     const [appointments, setAppointments] = useState<any[]>([]);
@@ -21,6 +24,8 @@ export default function AppointmentsScreen() {
     const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+    const [healthSuggestions, setHealthSuggestions] = useState<any[]>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
     const handleRatePress = (doctor: any) => {
         // Ensure we have a valid doctorId
@@ -135,6 +140,47 @@ export default function AppointmentsScreen() {
         return () => unsubscribeAuth();
     }, []);
 
+    // Generate AI Health Suggestions
+    useEffect(() => {
+        if (appointments.length < 3) return; // Only suggest if user has history
+
+        const generateSuggestions = async () => {
+            setLoadingSuggestions(true);
+            try {
+                // Prepare appointment history summary
+                const history = appointments.slice(0, 10).map(apt =>
+                    `${apt.professional || 'General'} - ${apt.date}`
+                ).join('\n');
+
+                const prompt = `Based on this patient's appointment history, suggest 1-2 health checkup reminders:\n\n${history}\n\nReturn ONLY valid JSON:\n{\n  "suggestions": [{\n    "specialty": "Cardiologist",\n    "reason": "It's been 6 months since your last heart checkup"\n  }]\n}`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+
+                const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                const aiResult = JSON.parse(cleanJson);
+
+                setHealthSuggestions(aiResult.suggestions || []);
+            } catch (error) {
+                console.error("Suggestions Error:", error);
+                setHealthSuggestions([]);
+            } finally {
+                setLoadingSuggestions(false);
+            }
+        };
+
+        generateSuggestions();
+    }, [appointments]);
+
     // Filter Logic
     const filteredAppointments = appointments.filter(apt => {
         // 1. Status Filter
@@ -220,6 +266,36 @@ export default function AppointmentsScreen() {
                     {renderFilterTab('cancelled', 'Cancelled')}
                 </ScrollView>
             </View>
+
+            {/* AI Health Suggestions */}
+            {healthSuggestions.length > 0 && (
+                <View style={styles.suggestionsSection}>
+                    <View style={styles.suggestionHeader}>
+                        <Ionicons name="notifications" size={20} color={Colors.primary} />
+                        <Text style={styles.suggestionTitle}>Health Reminders 🔔</Text>
+                    </View>
+                    {healthSuggestions.map((suggestion, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.suggestionCard}
+                            onPress={() => {
+                                router.push({ pathname: "/(tabs)/home", params: { category: suggestion.specialty } } as any);
+                            }}
+                        >
+                            <View style={styles.suggestionContent}>
+                                <View style={styles.suggestionIcon}>
+                                    <Ionicons name="medical" size={20} color="#6C63FF" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.suggestionSpecialty}>{suggestion.specialty}</Text>
+                                    <Text style={styles.suggestionReason}>{suggestion.reason}</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
 
             {filteredAppointments.length === 0 ? (
                 <View style={styles.emptyState}>
@@ -695,5 +771,52 @@ const styles = StyleSheet.create({
     fullWidthButton: {
         borderRadius: 12,
         paddingVertical: 6,
+    },
+    suggestionsSection: {
+        paddingHorizontal: 20,
+        marginBottom: 20,
+    },
+    suggestionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    suggestionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: Colors.text,
+        marginLeft: 8,
+    },
+    suggestionCard: {
+        backgroundColor: '#F8F9FF',
+        borderRadius: 15,
+        padding: 15,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#E0E0FF',
+    },
+    suggestionContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    suggestionIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#EEE9FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    suggestionSpecialty: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: Colors.text,
+        marginBottom: 4,
+    },
+    suggestionReason: {
+        fontSize: 13,
+        color: Colors.textSecondary,
+        lineHeight: 18,
     }
 });
