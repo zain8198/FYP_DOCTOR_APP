@@ -40,11 +40,22 @@ export default function Patients() {
                 const data = usersSnap.val();
                 const patientList = Object.keys(data).map(key => {
                     // Calculate Total Appointments for this user
-                    const userApts = aptData[key] ? Object.keys(aptData[key]).length : 0;
+                    const userAptsObj = aptData[key];
+                    const userApts = userAptsObj ? Object.keys(userAptsObj).length : 0;
+
+                    // Fallback for name from appointments if missing in profile
+                    let possibleName = data[key].name;
+                    if (!possibleName && userAptsObj) {
+                        // Type assertion to access values safely if needed, or just iterate
+                        const appoints = Object.values(userAptsObj) as any[];
+                        if (appoints.length > 0 && appoints[0].patientName) {
+                            possibleName = appoints[0].patientName;
+                        }
+                    }
 
                     return {
                         id: key,
-                        name: data[key].name || "Unknown User",
+                        name: possibleName || "Unknown User",
                         email: data[key].email || "No Email",
                         image: data[key].image,
                         totalAppointments: userApts
