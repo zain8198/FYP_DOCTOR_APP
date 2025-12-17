@@ -8,9 +8,10 @@ import { ReviewModal } from "../../components/ReviewModal";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { SearchBar } from "../../components/home/SearchBar";
+import Constants from 'expo-constants';
 
-// Reuse Gemini API Key
-const GEMINI_API_KEY = "AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M";
+// Get API key from environment variables
+const GEMINI_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
 export default function AppointmentsScreen() {
     const router = useRouter();

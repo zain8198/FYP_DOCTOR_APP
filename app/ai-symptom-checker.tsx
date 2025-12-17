@@ -4,10 +4,10 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 
-// ⚠️ REPLACE WITH YOUR ACTUAL KEY
-// You can also move this to a .env file or constants/Config.ts
-const GEMINI_API_KEY = "AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M";
+// Get API key from environment variables
+const GEMINI_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
 const DOCTOR_CATEGORIES = [
     "General Physician", "Cardiologist", "Dentist", "Dermatologist",

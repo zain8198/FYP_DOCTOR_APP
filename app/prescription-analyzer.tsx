@@ -7,8 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { auth, db } from '../firebase';
 import { ref, push } from 'firebase/database';
+import Constants from 'expo-constants';
 
-const GEMINI_API_KEY = 'AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M';
+// Get API key from environment variables
+const GEMINI_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
 export default function PrescriptionAnalyzer() {
     const router = useRouter();

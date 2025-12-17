@@ -6,9 +6,10 @@ import { auth, db } from "../../firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
+import Constants from 'expo-constants';
 
-// Reuse Gemini API Key
-const GEMINI_API_KEY = "AIzaSyCGZbKMgPGzJMF3eZ87A2ACpjieLj_5r6M";
+// Get API key from environment variables
+const GEMINI_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
 export default function DoctorDashboard() {
     const [appointments, setAppointments] = useState<any[]>([]);
