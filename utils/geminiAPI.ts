@@ -66,13 +66,14 @@ class GeminiAPIManager {
     }
 
     /**
-     * Check if error is a rate limit error
+     * Check if error is a rate limit error or temporary server overload
      */
     private isRateLimitError(error: any): boolean {
         const errorMessage = error?.message || error?.toString() || '';
         return errorMessage.includes('Quota exceeded') ||
             errorMessage.includes('rate limit') ||
-            errorMessage.includes('RESOURCE_EXHAUSTED');
+            errorMessage.includes('RESOURCE_EXHAUSTED') ||
+            errorMessage.includes('overloaded'); // Handle server overload
     }
 
     /**
