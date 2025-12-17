@@ -5,9 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
-
-// Get API key from environment variables
-const GEMINI_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+import { callGeminiAPI } from '../utils/geminiAPI';
 
 const DOCTOR_CATEGORIES = [
     "General Physician", "Cardiologist", "Dentist", "Dermatologist",
@@ -48,23 +46,7 @@ export default function AiSymptomChecker() {
                 }
             `;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error(data.error.message || "API Error");
-            }
-
-            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const textResponse = await callGeminiAPI(prompt);
 
             // Clean markdown if present (Gemini sometimes adds ```json ... ```)
             const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();

@@ -39,7 +39,17 @@ module.exports = {
             typedRoutes: true
         },
         extra: {
-            EXPO_PUBLIC_GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY
+            EXPO_PUBLIC_GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+            EXPO_PUBLIC_GEMINI_API_KEY_1: process.env.EXPO_PUBLIC_GEMINI_API_KEY_1,
+            EXPO_PUBLIC_GEMINI_API_KEY_2: process.env.EXPO_PUBLIC_GEMINI_API_KEY_2,
+            EXPO_PUBLIC_GEMINI_API_KEY_3: process.env.EXPO_PUBLIC_GEMINI_API_KEY_3,
+            EXPO_PUBLIC_GEMINI_API_KEY_4: process.env.EXPO_PUBLIC_GEMINI_API_KEY_4,
+            EXPO_PUBLIC_GEMINI_API_KEY_5: process.env.EXPO_PUBLIC_GEMINI_API_KEY_5,
+            EXPO_PUBLIC_GEMINI_API_KEY_6: process.env.EXPO_PUBLIC_GEMINI_API_KEY_6,
+            EXPO_PUBLIC_GEMINI_API_KEY_7: process.env.EXPO_PUBLIC_GEMINI_API_KEY_7,
+            EXPO_PUBLIC_GEMINI_API_KEY_8: process.env.EXPO_PUBLIC_GEMINI_API_KEY_8,
+            EXPO_PUBLIC_GEMINI_API_KEY_9: process.env.EXPO_PUBLIC_GEMINI_API_KEY_9,
+            EXPO_PUBLIC_GEMINI_API_KEY_10: process.env.EXPO_PUBLIC_GEMINI_API_KEY_10
         }
     }
 };

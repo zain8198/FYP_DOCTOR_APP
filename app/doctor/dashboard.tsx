@@ -7,9 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { useRouter } from "expo-router";
 import Constants from 'expo-constants';
-
-// Get API key from environment variables
-const GEMINI_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+import { useCache } from "../../utils/useCache";
+import { callGeminiAPI } from "../../utils/geminiAPI";
 
 export default function DoctorDashboard() {
     const [appointments, setAppointments] = useState<any[]>([]);
@@ -19,6 +18,7 @@ export default function DoctorDashboard() {
     const router = useRouter();
     const [feedbackInsights, setFeedbackInsights] = useState<any>(null);
     const [loadingInsights, setLoadingInsights] = useState(false);
+    const cache = useCache(); // Initialize cache hook
 
     const handleStatusUpdate = async (patientId: string, appointmentId: string, newStatus: string) => {
         try {
@@ -52,17 +52,31 @@ export default function DoctorDashboard() {
             if (!auth.currentUser) return;
             setLoading(true);
             try {
-                // 1. Get Doctor Profile
-                const doctorRef = ref(db, `doctors/${auth.currentUser.uid}`);
-                const docSnap = await get(doctorRef);
+                // 1. Get Doctor Profile with caching
+                const cacheKey = `doctor_own_profile_${auth.currentUser.uid}`;
+                const cachedProfile = cache.getCachedData<any>(cacheKey);
 
                 let docData = { name: "Doctor" };
-                if (docSnap.exists()) {
-                    docData = docSnap.val();
+                if (cachedProfile) {
+                    docData = cachedProfile;
                     setDoctorProfile(docData);
-                    // Use stored stats if available, else mock/calculate
+                    // Use stored stats if available
                     if (docData.stats) setStats(docData.stats);
                     else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs', rating: parseFloat(docData.rating || '4.8') }));
+                } else {
+                    // Cache miss - fetch from Firebase
+                    const doctorRef = ref(db, `doctors/${auth.currentUser.uid}`);
+                    const docSnap = await get(doctorRef);
+
+                    if (docSnap.exists()) {
+                        docData = docSnap.val();
+                        setDoctorProfile(docData);
+                        // Store in cache
+                        cache.setCachedData(cacheKey, docData);
+                        // Use stored stats if available, else mock/calculate
+                        if (docData.stats) setStats(docData.stats);
+                        else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs', rating: parseFloat(docData.rating || '4.8') }));
+                    }
                 }
 
                 // 2. Get Appointments & Resolve Patient Names
@@ -122,6 +136,17 @@ export default function DoctorDashboard() {
         const generateInsights = async () => {
             setLoadingInsights(true);
             try {
+                // Check cache first
+                const cacheKey = `doctor_feedback_insights_${auth.currentUser.uid}`;
+                const cachedInsights = cache.getCachedData<any>(cacheKey);
+
+                if (cachedInsights) {
+                    setFeedbackInsights(cachedInsights);
+                    setLoadingInsights(false);
+                    return;
+                }
+
+                // Cache miss - fetch reviews and generate insights
                 const reviewsRef = ref(db, `reviews/${auth.currentUser.uid}`);
                 const snapshot = await get(reviewsRef);
 
@@ -142,22 +167,13 @@ export default function DoctorDashboard() {
 
                 const prompt = `Analyze these doctor reviews and provide actionable insights:\n\n${reviewTexts.join('\n\n')}\n\nReturn ONLY valid JSON:\n{\n  "strengths": ["Friendly", "Quick"],\n  "improvements": ["Wait time"],\n  "trend": "Positive"\n}`;
 
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-
-                const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                const textResponse = await callGeminiAPI(prompt);
                 const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
                 const insights = JSON.parse(cleanJson);
 
                 setFeedbackInsights(insights);
+                // Store in cache
+                cache.setCachedData(cacheKey, insights);
             } catch (error) {
                 console.error("Insights Error:", error);
                 setFeedbackInsights(null);

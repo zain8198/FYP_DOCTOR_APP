@@ -9,14 +9,14 @@ import { auth, db } from "../firebase";
 import { Colors } from "../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from 'expo-constants';
-
-// Get API key from environment variables
-const GEMINI_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GEMINI_API_KEY || process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+import { useCache } from "../utils/useCache";
+import { callGeminiAPI } from "../utils/geminiAPI";
 
 export default function DoctorDetailsScreen() {
     const { id } = useLocalSearchParams();
     const theme = useTheme();
     const router = useRouter();
+    const cache = useCache(); // Initialize cache hook
 
     const [doctor, setDoctor] = useState<any>(null);
     const [date, setDate] = useState(new Date());
@@ -35,12 +35,25 @@ export default function DoctorDetailsScreen() {
 
         const fetchDoctor = async () => {
             try {
+                // Check cache first
+                const cacheKey = `doctor_profile_${id}`;
+                const cachedDoctor = cache.getCachedData<any>(cacheKey);
+
+                if (cachedDoctor) {
+                    setDoctor({ id, ...cachedDoctor });
+                    setFetching(false);
+                    return;
+                }
+
+                // Cache miss - fetch from Firebase
                 const docRef = ref(db, `doctors/${id}`);
                 const snapshot = await get(docRef);
 
                 if (snapshot.exists()) {
                     const docData = snapshot.val();
                     setDoctor({ id, ...docData });
+                    // Store in cache
+                    cache.setCachedData(cacheKey, docData);
                 } else {
                     setDoctor(null);
                 }
@@ -147,6 +160,17 @@ export default function DoctorDetailsScreen() {
         const fetchAndSummarizeReviews = async () => {
             setLoadingSummary(true);
             try {
+                // Check cache first
+                const cacheKey = `doctor_reviews_summary_${id}`;
+                const cachedSummary = cache.getCachedData<string>(cacheKey);
+
+                if (cachedSummary) {
+                    setReviewSummary(cachedSummary);
+                    setLoadingSummary(false);
+                    return;
+                }
+
+                // Cache miss - fetch reviews and generate summary
                 const reviewsRef = ref(db, `reviews/${id}`);
                 const snapshot = await get(reviewsRef);
 
@@ -183,20 +207,13 @@ export default function DoctorDetailsScreen() {
                 // Generate AI Summary
                 const prompt = `Summarize these doctor reviews in 2-3 concise bullet points. Highlight key strengths and any concerns:\n\n${reviewTexts.join('\n\n')}`;
 
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-
-                const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                const summary = await callGeminiAPI(prompt);
                 console.log("AI Summary generated:", summary);
-                setReviewSummary(summary || "Unable to generate summary.");
+                const finalSummary = summary || "Unable to generate summary.";
+
+                setReviewSummary(finalSummary);
+                // Store in cache
+                cache.setCachedData(cacheKey, finalSummary);
 
             } catch (error) {
                 console.error("Review Summary Error:", error);
