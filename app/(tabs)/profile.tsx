@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, Image, Platform, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, Image, Platform, ActivityIndicator, KeyboardAvoidingView } from "react-native";
 import { Text } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { ref as dbRef, get, update } from "firebase/database";
@@ -166,60 +166,66 @@ export default function ProfileScreen() {
             </View>
 
             {/* Scrollable Form Inputs */}
-            <ScrollView contentContainerStyle={styles.formScrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.formContainer}>
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Full Name</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={name}
-                            onChangeText={setName}
-                            placeholder="Enter your full name"
-                            placeholderTextColor="#999"
-                        />
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <ScrollView contentContainerStyle={styles.formScrollContent} showsVerticalScrollIndicator={false}>
+                    <View style={styles.formContainer}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Full Name</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="Enter your full name"
+                                placeholderTextColor="#999"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Phone Number</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={phone}
+                                onChangeText={setPhone}
+                                placeholder="+1 234 567 890"
+                                placeholderTextColor="#999"
+                                keyboardType="phone-pad"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Bio</Text>
+                            <TextInput
+                                style={[styles.input, styles.textArea]}
+                                value={bio}
+                                onChangeText={setBio}
+                                placeholder="Tell us about yourself..."
+                                placeholderTextColor="#999"
+                                multiline
+                                numberOfLines={3}
+                                textAlignVertical="top"
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Email</Text>
+                            <TextInput
+                                style={[styles.input, styles.disabledInput]}
+                                value={email}
+                                editable={false}
+                            />
+                        </View>
+
+                        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
+                            {loading ? <ActivityIndicator color="white" /> : <Text style={styles.saveButtonText}>Save Profile</Text>}
+                        </TouchableOpacity>
+
                     </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Phone Number</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={phone}
-                            onChangeText={setPhone}
-                            placeholder="+1 234 567 890"
-                            placeholderTextColor="#999"
-                            keyboardType="phone-pad"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Bio</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea]}
-                            value={bio}
-                            onChangeText={setBio}
-                            placeholder="Tell us about yourself..."
-                            placeholderTextColor="#999"
-                            multiline
-                            numberOfLines={3}
-                            textAlignVertical="top"
-                        />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email</Text>
-                        <TextInput
-                            style={[styles.input, styles.disabledInput]}
-                            value={email}
-                            editable={false}
-                        />
-                    </View>
-
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
-                        {loading ? <ActivityIndicator color="white" /> : <Text style={styles.saveButtonText}>Save Profile</Text>}
-                    </TouchableOpacity>
-
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Absolute Logout Button */}
             <TouchableOpacity style={styles.logoutAbsolute} onPress={handleLogout}>

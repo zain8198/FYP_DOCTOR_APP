@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
@@ -28,48 +28,53 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ visible, onClose, onSu
     return (
         <Modal visible={visible} transparent animationType="slide">
             <View style={styles.overlay}>
-                <View style={styles.container}>
-                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                        <Ionicons name="close" size={24} color={Colors.textSecondary} />
-                    </TouchableOpacity>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1, justifyContent: 'center', padding: 20 }}
+                >
+                    <View style={styles.container}>
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                            <Ionicons name="close" size={24} color={Colors.textSecondary} />
+                        </TouchableOpacity>
 
-                    <Text style={styles.title}>Rate your experience</Text>
-                    <Text style={styles.subtitle}>How was your consultation with Dr. {doctorName}?</Text>
+                        <Text style={styles.title}>Rate your experience</Text>
+                        <Text style={styles.subtitle}>How was your consultation with Dr. {doctorName}?</Text>
 
-                    <View style={styles.starsContainer}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                                <Ionicons
-                                    name={star <= rating ? "star" : "star-outline"}
-                                    size={32}
-                                    color={Colors.rating}
-                                    style={styles.star}
-                                />
-                            </TouchableOpacity>
-                        ))}
+                        <View style={styles.starsContainer}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <TouchableOpacity key={star} onPress={() => setRating(star)}>
+                                    <Ionicons
+                                        name={star <= rating ? "star" : "star-outline"}
+                                        size={32}
+                                        color={Colors.rating}
+                                        style={styles.star}
+                                    />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Write a review (optional)..."
+                            multiline
+                            numberOfLines={4}
+                            value={review}
+                            onChangeText={setReview}
+                        />
+
+                        <TouchableOpacity
+                            style={[styles.submitButton, rating === 0 && styles.disabledButton]}
+                            onPress={handleSubmit}
+                            disabled={rating === 0 || loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color={Colors.white} />
+                            ) : (
+                                <Text style={styles.submitButtonText}>Submit Review</Text>
+                            )}
+                        </TouchableOpacity>
                     </View>
-
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Write a review (optional)..."
-                        multiline
-                        numberOfLines={4}
-                        value={review}
-                        onChangeText={setReview}
-                    />
-
-                    <TouchableOpacity
-                        style={[styles.submitButton, rating === 0 && styles.disabledButton]}
-                        onPress={handleSubmit}
-                        disabled={rating === 0 || loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color={Colors.white} />
-                        ) : (
-                            <Text style={styles.submitButtonText}>Submit Review</Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
+                </KeyboardAvoidingView>
             </View>
         </Modal>
     );
@@ -79,8 +84,6 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        padding: 20,
     },
     container: {
         backgroundColor: Colors.white,

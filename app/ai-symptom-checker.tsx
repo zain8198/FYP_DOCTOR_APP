@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
@@ -101,72 +101,78 @@ export default function AiSymptomChecker() {
                 <View style={{ width: 24 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+            >
+                <ScrollView contentContainerStyle={styles.content}>
 
-                <View style={styles.introCard}>
-                    <Text style={styles.introTitle}>Describe your symptoms</Text>
-                    <Text style={styles.introSubtitle}>
-                        Our AI will analyze your condition and suggest the right specialist.
-                    </Text>
-                </View>
-
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="e.g., I have a throbbing headache on one side and potential nausea..."
-                        placeholderTextColor="#999"
-                        multiline
-                        textAlignVertical="top"
-                        value={symptoms}
-                        onChangeText={setSymptoms}
-                    />
-                </View>
-
-                <TouchableOpacity
-                    style={[styles.analyzeButton, loading && styles.disabledButton]}
-                    onPress={analyzeSymptoms}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <>
-                            <Ionicons name="sparkles" size={20} color="#fff" style={{ marginRight: 8 }} />
-                            <Text style={styles.buttonText}>Analyze Symptoms</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
-
-                {result && (
-                    <View style={styles.resultContainer}>
-                        <View style={styles.resultHeader}>
-                            <Ionicons name="medical" size={24} color={Colors.primary} />
-                            <Text style={styles.resultTitle}>Analysis Result</Text>
-                        </View>
-
-                        <View style={styles.resultItem}>
-                            <Text style={styles.label}>Possible Condition:</Text>
-                            <Text style={styles.value}>{result.condition}</Text>
-                        </View>
-
-                        <View style={styles.resultItem}>
-                            <Text style={styles.label}>Immediate Advice:</Text>
-                            <Text style={styles.value}>{result.advice}</Text>
-                        </View>
-
-                        <View style={styles.recommendationCard}>
-                            <Text style={styles.recommendationLabel}>Recommended Specialist</Text>
-                            <Text style={styles.specialistName}>{result.specialist}</Text>
-
-                            <TouchableOpacity style={styles.bookButton} onPress={handleFindDoctor}>
-                                <Text style={styles.bookButtonText}>Find {result.specialist}</Text>
-                                <Ionicons name="arrow-forward" size={16} color="#fff" />
-                            </TouchableOpacity>
-                        </View>
+                    <View style={styles.introCard}>
+                        <Text style={styles.introTitle}>Describe your symptoms</Text>
+                        <Text style={styles.introSubtitle}>
+                            Our AI will analyze your condition and suggest the right specialist.
+                        </Text>
                     </View>
-                )}
 
-            </ScrollView>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="e.g., I have a throbbing headache on one side and potential nausea..."
+                            placeholderTextColor="#999"
+                            multiline
+                            textAlignVertical="top"
+                            value={symptoms}
+                            onChangeText={setSymptoms}
+                        />
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.analyzeButton, loading && styles.disabledButton]}
+                        onPress={analyzeSymptoms}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <>
+                                <Ionicons name="sparkles" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                <Text style={styles.buttonText}>Analyze Symptoms</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+
+                    {result && (
+                        <View style={styles.resultContainer}>
+                            <View style={styles.resultHeader}>
+                                <Ionicons name="medical" size={24} color={Colors.primary} />
+                                <Text style={styles.resultTitle}>Analysis Result</Text>
+                            </View>
+
+                            <View style={styles.resultItem}>
+                                <Text style={styles.label}>Possible Condition:</Text>
+                                <Text style={styles.value}>{result.condition}</Text>
+                            </View>
+
+                            <View style={styles.resultItem}>
+                                <Text style={styles.label}>Immediate Advice:</Text>
+                                <Text style={styles.value}>{result.advice}</Text>
+                            </View>
+
+                            <View style={styles.recommendationCard}>
+                                <Text style={styles.recommendationLabel}>Recommended Specialist</Text>
+                                <Text style={styles.specialistName}>{result.specialist}</Text>
+
+                                <TouchableOpacity style={styles.bookButton} onPress={handleFindDoctor}>
+                                    <Text style={styles.bookButtonText}>Find {result.specialist}</Text>
+                                    <Ionicons name="arrow-forward" size={16} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
+
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

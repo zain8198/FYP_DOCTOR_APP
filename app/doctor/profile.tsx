@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Platform, SafeAreaView } from "react-native";
+import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Platform, SafeAreaView, KeyboardAvoidingView } from "react-native";
 import { Text, Avatar, Button, TextInput, ActivityIndicator, Chip } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { ref, get, update } from "firebase/database";
@@ -171,154 +171,160 @@ export default function DoctorProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header Profile Section */}
-                <View style={styles.header}>
-                    <View style={styles.avatarContainer}>
-                        <Avatar.Image
-                            size={100}
-                            source={{ uri: profile.image || 'https://i.pravatar.cc/150?img=11' }}
-                        />
-                        <TouchableOpacity style={styles.camIcon} onPress={pickImage}>
-                            <Ionicons name="camera" size={20} color="#FFF" />
-                        </TouchableOpacity>
-                    </View>
-                    <Text variant="headlineSmall" style={styles.name}>Dr. {profile.name}</Text>
-                    <Text style={styles.specialty}>{profile.specialty || "Specialist"}</Text>
-                </View>
-
-                {/* Form Section */}
-                <View style={styles.form}>
-                    <Text style={styles.sectionTitle}>Availability Settings</Text>
-                    <View style={styles.availabilityCard}>
-                        <Text style={styles.subLabel}>Working Days</Text>
-                        <View style={styles.daysContainer}>
-                            {WEEKDAYS.map(day => (
-                                <Chip
-                                    key={day}
-                                    selected={availability.days.includes(day)}
-                                    onPress={() => toggleDay(day)}
-                                    style={[styles.dayChip, availability.days.includes(day) && styles.dayChipSelected]}
-                                    textStyle={{ fontSize: 12 }}
-                                    showSelectedOverlay
-                                >
-                                    {day.slice(0, 3)}
-                                </Chip>
-                            ))}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+                    {/* Header Profile Section */}
+                    <View style={styles.header}>
+                        <View style={styles.avatarContainer}>
+                            <Avatar.Image
+                                size={100}
+                                source={{ uri: profile.image || 'https://i.pravatar.cc/150?img=11' }}
+                            />
+                            <TouchableOpacity style={styles.camIcon} onPress={pickImage}>
+                                <Ionicons name="camera" size={20} color="#FFF" />
+                            </TouchableOpacity>
                         </View>
+                        <Text variant="headlineSmall" style={styles.name}>Dr. {profile.name}</Text>
+                        <Text style={styles.specialty}>{profile.specialty || "Specialist"}</Text>
+                    </View>
 
-                        <Text style={styles.subLabel}>Working Hours</Text>
-                        <View style={styles.timeRow}>
-                            <View style={{ flex: 1, marginRight: 10 }}>
-                                <Text style={{ marginBottom: 5, color: Colors.textSecondary }}>Start Time</Text>
-                                {/* Simple implementation: Using chips or just cycling for now? 
+                    {/* Form Section */}
+                    <View style={styles.form}>
+                        <Text style={styles.sectionTitle}>Availability Settings</Text>
+                        <View style={styles.availabilityCard}>
+                            <Text style={styles.subLabel}>Working Days</Text>
+                            <View style={styles.daysContainer}>
+                                {WEEKDAYS.map(day => (
+                                    <Chip
+                                        key={day}
+                                        selected={availability.days.includes(day)}
+                                        onPress={() => toggleDay(day)}
+                                        style={[styles.dayChip, availability.days.includes(day) && styles.dayChipSelected]}
+                                        textStyle={{ fontSize: 12 }}
+                                        showSelectedOverlay
+                                    >
+                                        {day.slice(0, 3)}
+                                    </Chip>
+                                ))}
+                            </View>
+
+                            <Text style={styles.subLabel}>Working Hours</Text>
+                            <View style={styles.timeRow}>
+                                <View style={{ flex: 1, marginRight: 10 }}>
+                                    <Text style={{ marginBottom: 5, color: Colors.textSecondary }}>Start Time</Text>
+                                    {/* Simple implementation: Using chips or just cycling for now? 
                                     Better: A simplified Scroll/Select approach or just text inputs if we trust format.
                                     Let's use a simple horizontal scroll of options for now to be safe and UI friendly.
                                 */}
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#f5f5f5', padding: 8, borderRadius: 8 }}>
-                                    {TIMES.map(t => (
-                                        <TouchableOpacity key={t} onPress={() => setAvailability({ ...availability, startTime: t })} style={{ marginRight: 15 }}>
-                                            <Text style={{
-                                                color: availability.startTime === t ? Colors.primary : Colors.text,
-                                                fontWeight: availability.startTime === t ? 'bold' : 'normal'
-                                            }}>{t}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#f5f5f5', padding: 8, borderRadius: 8 }}>
+                                        {TIMES.map(t => (
+                                            <TouchableOpacity key={t} onPress={() => setAvailability({ ...availability, startTime: t })} style={{ marginRight: 15 }}>
+                                                <Text style={{
+                                                    color: availability.startTime === t ? Colors.primary : Colors.text,
+                                                    fontWeight: availability.startTime === t ? 'bold' : 'normal'
+                                                }}>{t}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            </View>
+                            <View style={[styles.timeRow, { marginTop: 10 }]}>
+                                <View style={{ flex: 1, marginRight: 10 }}>
+                                    <Text style={{ marginBottom: 5, color: Colors.textSecondary }}>End Time</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#f5f5f5', padding: 8, borderRadius: 8 }}>
+                                        {TIMES.map(t => (
+                                            <TouchableOpacity key={t} onPress={() => setAvailability({ ...availability, endTime: t })} style={{ marginRight: 15 }}>
+                                                <Text style={{
+                                                    color: availability.endTime === t ? Colors.primary : Colors.text,
+                                                    fontWeight: availability.endTime === t ? 'bold' : 'normal'
+                                                }}>{t}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
                             </View>
                         </View>
-                        <View style={[styles.timeRow, { marginTop: 10 }]}>
-                            <View style={{ flex: 1, marginRight: 10 }}>
-                                <Text style={{ marginBottom: 5, color: Colors.textSecondary }}>End Time</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: '#f5f5f5', padding: 8, borderRadius: 8 }}>
-                                    {TIMES.map(t => (
-                                        <TouchableOpacity key={t} onPress={() => setAvailability({ ...availability, endTime: t })} style={{ marginRight: 15 }}>
-                                            <Text style={{
-                                                color: availability.endTime === t ? Colors.primary : Colors.text,
-                                                fontWeight: availability.endTime === t ? 'bold' : 'normal'
-                                            }}>{t}</Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                            </View>
-                        </View>
-                    </View>
 
-                    <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Personal Details</Text>
+                        <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Personal Details</Text>
 
-                    <TextInput
-                        label="Full Name"
-                        value={profile.name}
-                        onChangeText={t => setProfile({ ...profile, name: t })}
-                        mode="outlined"
-                        style={styles.input}
-                        outlineColor="#DDD"
-                        activeOutlineColor={Colors.primary}
-                    />
-
-                    <View style={styles.row}>
                         <TextInput
-                            label="Specialty"
-                            value={profile.specialty}
-                            onChangeText={t => setProfile({ ...profile, specialty: t })}
+                            label="Full Name"
+                            value={profile.name}
+                            onChangeText={t => setProfile({ ...profile, name: t })}
                             mode="outlined"
-                            style={[styles.input, { flex: 1, marginRight: 10 }]}
+                            style={styles.input}
                             outlineColor="#DDD"
                             activeOutlineColor={Colors.primary}
                         />
+
+                        <View style={styles.row}>
+                            <TextInput
+                                label="Specialty"
+                                value={profile.specialty}
+                                onChangeText={t => setProfile({ ...profile, specialty: t })}
+                                mode="outlined"
+                                style={[styles.input, { flex: 1, marginRight: 10 }]}
+                                outlineColor="#DDD"
+                                activeOutlineColor={Colors.primary}
+                            />
+                            <TextInput
+                                label="Experience (Yrs)"
+                                value={profile.experience}
+                                onChangeText={t => setProfile({ ...profile, experience: t })}
+                                mode="outlined"
+                                style={[styles.input, { flex: 0.6 }]}
+                                outlineColor="#DDD"
+                                activeOutlineColor={Colors.primary}
+                            />
+                        </View>
+
                         <TextInput
-                            label="Experience (Yrs)"
-                            value={profile.experience}
-                            onChangeText={t => setProfile({ ...profile, experience: t })}
+                            label="Consultation Fee ($)"
+                            value={profile.price}
+                            onChangeText={t => setProfile({ ...profile, price: t })}
                             mode="outlined"
-                            style={[styles.input, { flex: 0.6 }]}
+                            keyboardType="numeric"
+                            style={styles.input}
                             outlineColor="#DDD"
                             activeOutlineColor={Colors.primary}
                         />
+
+                        <TextInput
+                            label="Bio / Description"
+                            value={profile.bio}
+                            onChangeText={t => setProfile({ ...profile, bio: t })}
+                            mode="outlined"
+                            multiline
+                            numberOfLines={4}
+                            style={styles.input}
+                            outlineColor="#DDD"
+                            activeOutlineColor={Colors.primary}
+                        />
+
+                        <Button
+                            mode="contained"
+                            onPress={handleSave}
+                            loading={saving}
+                            style={styles.saveBtn}
+                        >
+                            Save Changes
+                        </Button>
+
+                        <Button
+                            mode="outlined"
+                            onPress={handleLogout}
+                            style={styles.logoutBtn}
+                            textColor={Colors.error}
+                        >
+                            Log Out
+                        </Button>
                     </View>
-
-                    <TextInput
-                        label="Consultation Fee ($)"
-                        value={profile.price}
-                        onChangeText={t => setProfile({ ...profile, price: t })}
-                        mode="outlined"
-                        keyboardType="numeric"
-                        style={styles.input}
-                        outlineColor="#DDD"
-                        activeOutlineColor={Colors.primary}
-                    />
-
-                    <TextInput
-                        label="Bio / Description"
-                        value={profile.bio}
-                        onChangeText={t => setProfile({ ...profile, bio: t })}
-                        mode="outlined"
-                        multiline
-                        numberOfLines={4}
-                        style={styles.input}
-                        outlineColor="#DDD"
-                        activeOutlineColor={Colors.primary}
-                    />
-
-                    <Button
-                        mode="contained"
-                        onPress={handleSave}
-                        loading={saving}
-                        style={styles.saveBtn}
-                    >
-                        Save Changes
-                    </Button>
-
-                    <Button
-                        mode="outlined"
-                        onPress={handleLogout}
-                        style={styles.logoutBtn}
-                        textColor={Colors.error}
-                    >
-                        Log Out
-                    </Button>
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
