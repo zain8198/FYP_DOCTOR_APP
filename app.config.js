@@ -13,6 +13,7 @@ module.exports = {
             supportsTablet: true
         },
         android: {
+            package: "com.yovari9016.doconcall",
             adaptiveIcon: {
                 foregroundImage: "./assets/images/adaptive-icon.png",
                 backgroundColor: "#ffffff"
