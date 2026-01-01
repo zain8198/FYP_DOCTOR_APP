@@ -11,4 +11,5 @@ export const Colors = {
   white: '#FFFFFF',
   iconBg: '#EAF4F0',
   error: '#FF5252',
+  lightPrimary: '#E8F5E9',
 };

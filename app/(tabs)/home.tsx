@@ -44,7 +44,7 @@ export default function HomeScreen() {
                     rating: data[key].rating ? parseFloat(data[key].rating) : 4.9,
                     image: data[key].image || 'https://i.pravatar.cc/150?img=32',
                     specialty: data[key].specialty || 'General Physician',
-                    price: data[key].price || 300,
+                    price: data[key].price || 1000,
                     status: data[key].status || 'pending'
                 }))
                 .filter(doc => doc.status === 'approved')

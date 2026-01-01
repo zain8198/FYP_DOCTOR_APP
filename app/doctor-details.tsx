@@ -237,47 +237,23 @@ export default function DoctorDetailsScreen() {
             return;
         }
 
-        setLoading(true);
-        try {
-            const dateStr = format(date, "yyyy-MM-dd");
-            const scheduleRef = ref(db, `doctor_schedules/${doctor.id}/${dateStr}/${selectedTimeSlot}`);
-
-            // Double check availability (concurrency)
-            const slotSnap = await get(scheduleRef);
-            if (slotSnap.exists()) {
-                Alert.alert("Sorry", "This slot was just booked by someone else.");
-                setBookedSlots([...bookedSlots, selectedTimeSlot]); // update local
-                setLoading(false);
-                return;
-            }
-
-            // 1. Reserve Slot
-            await set(scheduleRef, auth.currentUser.uid);
-
-            // 2. Create Appointment Record
-            const appointmentRef = ref(db, `appointments/${auth.currentUser.uid}`);
-            const patientName = auth.currentUser.email?.split('@')[0] || "Patient";
-
-            await push(appointmentRef, {
+        // Instead of booking directly, navigate to payment screen
+        router.push({
+            pathname: "/payment",
+            params: {
                 doctorId: doctor.id,
-                doctor: doctor.name,
-                patientId: auth.currentUser.uid,
-                patientName: patientName,
-                professional: doctor.specialty || doctor.profession,
-                date: format(date, "EEEE, d MMMM"),
-                dateIso: dateStr,
-                time: selectedTimeSlot,
-                details: "General checkup",
-                status: 'pending'
-            });
-
-            Alert.alert("Success", "Appointment Booked Successfully!");
-            router.replace("/(tabs)/appointments");
-        } catch (error: any) {
-            Alert.alert("Booking Failed", error.message);
-        } finally {
-            setLoading(false);
-        }
+                doctorName: doctor.name,
+                doctorSpecialty: doctor.specialty || doctor.profession,
+                consultationFee: doctor.price || 1000,
+                appointmentDate: format(date, "EEEE, d MMMM"),
+                dateIso: format(date, "yyyy-MM-dd"),
+                appointmentTime: selectedTimeSlot,
+                patientName: auth.currentUser.email?.split('@')[0] || "Patient",
+                patientAge: "25", // Mock or from profile
+                patientGender: "Male", // Mock or from profile
+                symptoms: "General checkup"
+            }
+        });
     };
 
     const onDateChange = (event: any, selectedDate?: Date) => {
@@ -457,7 +433,7 @@ export default function DoctorDetailsScreen() {
             <View style={styles.footer}>
                 <View>
                     <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>Total Price</Text>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: Colors.text }}>${doctor.price || 300}</Text>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: Colors.text }}>Rs. {doctor.price || 1000}</Text>
                 </View>
                 <TouchableOpacity
                     style={[styles.bookButton, (!selectedTimeSlot) && { backgroundColor: '#ccc' }]}

@@ -33,7 +33,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ name, specialty, rating,
 
                 <View style={styles.detailsRow}>
                     <View>
-                        <Text style={styles.price}>${price}</Text>
+                        <Text style={styles.price}>Rs. {price}</Text>
                         <Text style={styles.perSession}>Per session</Text>
                     </View>
                     <View style={styles.actions}>
@@ -81,11 +81,8 @@ const styles = StyleSheet.create({
     image: {
         width: 60,
         height: 60,
-        borderRadius: 30, // Updated to be circular as per new designs usually, though image showed square-ish with rounded corners? Image shows square with rounded corners.
-        // Let's stick to standard round for now or slight rounded square.
-        // The image shows a rect with rounded corners.
-        borderRadius: 12,
         marginRight: 15,
+        borderRadius: 12,
     },
     info: {
         flex: 1,

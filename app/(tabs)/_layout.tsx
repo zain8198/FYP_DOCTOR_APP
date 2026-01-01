@@ -84,6 +84,23 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
+                name="transactions"
+                options={{
+                    tabBarIcon: ({ focused }) => (
+                        <View style={[
+                            styles.iconContainer,
+                            focused && styles.activeIconContainer
+                        ]}>
+                            <Ionicons
+                                name={focused ? "receipt" : "receipt-outline"}
+                                size={24}
+                                color={focused ? Colors.white : Colors.textSecondary}
+                            />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="profile"
                 options={{
                     tabBarIcon: ({ focused }) => (
