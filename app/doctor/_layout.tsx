@@ -35,6 +35,15 @@ export default function DoctorLayout() {
                 }}
             />
             <Tabs.Screen
+                name="messages"
+                options={{
+                    tabBarLabel: "Messages",
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="chatbubbles-outline" size={size} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="profile"
                 options={{
                     tabBarLabel: "Profile",

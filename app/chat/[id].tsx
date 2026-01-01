@@ -119,11 +119,22 @@ export default function ChatScreen() {
 
         try {
             const messagesRef = ref(db, `chats/${chatId}/messages`);
+            const timestamp = Date.now();
 
             await push(messagesRef, {
                 text: inputText,
                 senderId: currentUserId,
-                createdAt: serverTimestamp() // Let server handle timestamp, or use Date.now() for optimistic
+                createdAt: timestamp
+            });
+
+            // Update chat metadata for chat list screen
+            const chatMetadataRef = ref(db, `chats/${chatId}/lastMessage`);
+            const { update: updateDb } = await import('firebase/database');
+
+            await updateDb(chatMetadataRef, {
+                text: inputText,
+                senderId: currentUserId,
+                timestamp: timestamp
             });
 
             setInputText('');
