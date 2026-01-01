@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, SafeAreaView, Platform, StatusBar, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +12,7 @@ import { auth, db } from '../../firebase';
 export default function PaymentSuccessScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const insets = useSafeAreaInsets();
     const [downloading, setDownloading] = useState(false);
 
     const transactionId = params.transactionId as string || '';
@@ -164,7 +166,7 @@ export default function PaymentSuccessScreen() {
             </ScrollView>
 
             {/* Done Button */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
                     <Text style={styles.doneButtonText}>View My Appointments</Text>
                 </TouchableOpacity>

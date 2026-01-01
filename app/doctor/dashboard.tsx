@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { View, FlatList, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Platform, StatusBar } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, Avatar, ActivityIndicator } from "react-native-paper";
 import { ref, get, update, onValue } from "firebase/database";
 import { auth, db } from "../../firebase";
@@ -10,7 +11,7 @@ import Constants from 'expo-constants';
 import { useCache } from "../../utils/useCache";
 import { callGeminiAPI } from "../../utils/geminiAPI";
 
-export default function DoctorDashboard() {
+export default function DoctorDashboardScreen() {
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [doctorProfile, setDoctorProfile] = useState<any>(null);
@@ -19,6 +20,8 @@ export default function DoctorDashboard() {
     const [feedbackInsights, setFeedbackInsights] = useState<any>(null);
     const [loadingInsights, setLoadingInsights] = useState(false);
     const cache = useCache(); // Initialize cache hook
+    const insets = useSafeAreaInsets();
+    const [refreshing, setRefreshing] = useState(false);
 
     const handleStatusUpdate = async (patientId: string, appointmentId: string, newStatus: string) => {
         try {
@@ -47,96 +50,99 @@ export default function DoctorDashboard() {
         }
     };
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!auth.currentUser) return;
-            setLoading(true);
-            try {
-                // 1. Get Doctor Profile with caching
-                const cacheKey = `doctor_own_profile_${auth.currentUser.uid}`;
-                const cachedProfile = cache.getCachedData<any>(cacheKey);
+    const fetchData = useCallback(async () => {
+        if (!auth.currentUser) return;
+        setLoading(true);
+        try {
+            // 1. Get Doctor Profile with caching
+            const cacheKey = `doctor_own_profile_${auth.currentUser.uid}`;
+            const cachedProfile = cache.getCachedData<any>(cacheKey);
 
-                let docData = { name: "Doctor" };
-                if (cachedProfile) {
-                    docData = cachedProfile;
+            let docData = { name: "Doctor" };
+            if (cachedProfile) {
+                docData = cachedProfile;
+                setDoctorProfile(docData);
+                // Use stored stats if available
+                if (docData.stats) setStats(docData.stats);
+                else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs', rating: parseFloat(docData.rating || '4.8') }));
+            } else {
+                // Cache miss - fetch from Firebase
+                const doctorRef = ref(db, `doctors/${auth.currentUser.uid}`);
+                const docSnap = await get(doctorRef);
+
+                if (docSnap.exists()) {
+                    docData = docSnap.val();
                     setDoctorProfile(docData);
-                    // Use stored stats if available
+                    // Store in cache
+                    cache.setCachedData(cacheKey, docData);
+                    // Use stored stats if available, else mock/calculate
                     if (docData.stats) setStats(docData.stats);
                     else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs', rating: parseFloat(docData.rating || '4.8') }));
-                } else {
-                    // Cache miss - fetch from Firebase
-                    const doctorRef = ref(db, `doctors/${auth.currentUser.uid}`);
-                    const docSnap = await get(doctorRef);
-
-                    if (docSnap.exists()) {
-                        docData = docSnap.val();
-                        setDoctorProfile(docData);
-                        // Store in cache
-                        cache.setCachedData(cacheKey, docData);
-                        // Use stored stats if available, else mock/calculate
-                        if (docData.stats) setStats(docData.stats);
-                        else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs', rating: parseFloat(docData.rating || '4.8') }));
-                    }
                 }
+            }
 
-                // 2. Get Appointments with REAL-TIME listener
-                const aptRef = ref(db, "appointments");
+            // 2. Get Appointments with REAL-TIME listener
+            const aptRef = ref(db, "appointments");
 
-                // Use onValue for real-time updates
-                const unsubscribe = onValue(aptRef, async (aptSnap) => {
-                    if (aptSnap.exists()) {
-                        const allApts = aptSnap.val();
-                        let myApts: any[] = [];
-                        let uniquePatients = new Set();
+            // Use onValue for real-time updates
+            const unsubscribe = onValue(aptRef, async (aptSnap) => {
+                if (aptSnap.exists()) {
+                    const allApts = aptSnap.val();
+                    let myApts: any[] = [];
+                    let uniquePatients = new Set();
 
-                        // Iterate over User IDs (Parent Nodes)
-                        for (let userId in allApts) {
-                            const userApts = allApts[userId];
+                    // Iterate over User IDs (Parent Nodes)
+                    for (let userId in allApts) {
+                        const userApts = allApts[userId];
 
-                            // Fetch User Details for this ID
-                            const userRef = ref(db, `users/${userId}`);
-                            const userSnap = await get(userRef);
-                            const userData = userSnap.exists() ? userSnap.val() : {};
+                        // Fetch User Details for this ID
+                        const userRef = ref(db, `users/${userId}`);
+                        const userSnap = await get(userRef);
+                        const userData = userSnap.exists() ? userSnap.val() : {};
 
-                            for (let aptId in userApts) {
-                                const apt = userApts[aptId];
+                        for (let aptId in userApts) {
+                            const apt = userApts[aptId];
 
-                                // Match Doctor (by Name or ID)
-                                const isMyPatient = (apt.doctor === docData.name) || (apt.doctorId === auth.currentUser.uid);
+                            // Match Doctor (by Name or ID)
+                            const isMyPatient = (apt.doctor === docData.name) || (apt.doctorId === auth.currentUser.uid);
 
-                                if (isMyPatient) {
-                                    uniquePatients.add(userId);
-                                    myApts.push({
-                                        id: aptId,
-                                        patientId: userId,
-                                        // Robust Name Logic: Profile Name -> Appointment Name -> Fallback
-                                        patientName: userData.name || apt.patientName || "Guest Patient",
-                                        patientImage: userData.image, // Could be null
-                                        ...apt,
-                                        status: apt.status || 'Upcoming'
-                                    });
-                                }
+                            if (isMyPatient) {
+                                uniquePatients.add(userId);
+                                myApts.push({
+                                    id: aptId,
+                                    patientId: userId,
+                                    // Robust Name Logic: Profile Name -> Appointment Name -> Fallback
+                                    patientName: userData.name || apt.patientName || "Guest Patient",
+                                    patientImage: userData.image, // Could be null
+                                    ...apt,
+                                    status: apt.status || 'Upcoming'
+                                });
                             }
                         }
-                        setAppointments(myApts);
-                        setStats(prev => ({ ...prev, patients: uniquePatients.size }));
-                    } else {
-                        setAppointments([]);
                     }
-                    setLoading(false);
-                }, (error) => {
-                    console.error("Real-time appointments error:", error);
-                    setLoading(false);
-                });
-
-                // Return cleanup function to unsubscribe when component unmounts
-                return unsubscribe;
-            } catch (error) {
-                console.error("Dashboard Error:", error);
+                    setAppointments(myApts);
+                    setStats(prev => ({ ...prev, patients: uniquePatients.size }));
+                } else {
+                    setAppointments([]);
+                }
                 setLoading(false);
-            }
-        };
+                setRefreshing(false); // Stop refreshing
+            }, (error) => {
+                console.error("Real-time appointments error:", error);
+                setLoading(false);
+                setRefreshing(false); // Stop refreshing
+            });
 
+            // Return cleanup function to unsubscribe when component unmounts
+            return unsubscribe;
+        } catch (error) {
+            console.error("Dashboard Error:", error);
+            setLoading(false);
+            setRefreshing(false); // Stop refreshing
+        }
+    }, [cache]); // Dependencies for useCallback
+
+    useEffect(() => {
         const unsubscribePromise = fetchData();
 
         // Cleanup function
@@ -145,63 +151,69 @@ export default function DoctorDashboard() {
                 if (unsub) unsub();
             });
         };
-    }, []);
+    }, [fetchData]);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchData();
+        generateInsights(); // Also refresh insights
+    }, [fetchData]);
 
     // Generate AI Feedback Insights
-    useEffect(() => {
+    const generateInsights = useCallback(async () => {
         if (!auth.currentUser) return;
 
-        const generateInsights = async () => {
-            setLoadingInsights(true);
-            try {
-                // Check cache first
-                const cacheKey = `doctor_feedback_insights_${auth.currentUser.uid}`;
-                const cachedInsights = cache.getCachedData<any>(cacheKey);
+        setLoadingInsights(true);
+        try {
+            // Check cache first
+            const cacheKey = `doctor_feedback_insights_${auth.currentUser.uid}`;
+            const cachedInsights = cache.getCachedData<any>(cacheKey);
 
-                if (cachedInsights) {
-                    setFeedbackInsights(cachedInsights);
-                    setLoadingInsights(false);
-                    return;
-                }
-
-                // Cache miss - fetch reviews and generate insights
-                const reviewsRef = ref(db, `reviews/${auth.currentUser.uid}`);
-                const snapshot = await get(reviewsRef);
-
-                if (!snapshot.exists()) {
-                    setLoadingInsights(false);
-                    return;
-                }
-
-                const reviewsData = snapshot.val();
-                const reviewTexts = Object.values(reviewsData).map((r: any) =>
-                    r.review || r.feedback || r.comment || ""
-                ).filter(Boolean);
-
-                if (reviewTexts.length === 0) {
-                    setLoadingInsights(false);
-                    return;
-                }
-
-                const prompt = `Analyze these doctor reviews and provide actionable insights:\n\n${reviewTexts.join('\n\n')}\n\nReturn ONLY valid JSON:\n{\n  "strengths": ["Friendly", "Quick"],\n  "improvements": ["Wait time"],\n  "trend": "Positive"\n}`;
-
-                const textResponse = await callGeminiAPI(prompt);
-                const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-                const insights = JSON.parse(cleanJson);
-
-                setFeedbackInsights(insights);
-                // Store in cache
-                cache.setCachedData(cacheKey, insights);
-            } catch (error) {
-                console.error("Insights Error:", error);
-                setFeedbackInsights(null);
-            } finally {
+            if (cachedInsights) {
+                setFeedbackInsights(cachedInsights);
                 setLoadingInsights(false);
+                return;
             }
-        };
 
+            // Cache miss - fetch reviews and generate insights
+            const reviewsRef = ref(db, `reviews/${auth.currentUser.uid}`);
+            const snapshot = await get(reviewsRef);
+
+            if (!snapshot.exists()) {
+                setLoadingInsights(false);
+                return;
+            }
+
+            const reviewsData = snapshot.val();
+            const reviewTexts = Object.values(reviewsData).map((r: any) =>
+                r.review || r.feedback || r.comment || ""
+            ).filter(Boolean);
+
+            if (reviewTexts.length === 0) {
+                setLoadingInsights(false);
+                return;
+            }
+
+            const prompt = `Analyze these doctor reviews and provide actionable insights:\n\n${reviewTexts.join('\n\n')}\n\nReturn ONLY valid JSON:\n{\n  "strengths": ["Friendly", "Quick"],\n  "improvements": ["Wait time"],\n  "trend": "Positive"\n}`;
+
+            const textResponse = await callGeminiAPI(prompt);
+            const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+            const insights = JSON.parse(cleanJson);
+
+            setFeedbackInsights(insights);
+            // Store in cache
+            cache.setCachedData(cacheKey, insights);
+        } catch (error) {
+            console.error("Insights Error:", error);
+            setFeedbackInsights(null);
+        } finally {
+            setLoadingInsights(false);
+        }
+    }, [cache]);
+
+    useEffect(() => {
         generateInsights();
-    }, []);
+    }, [generateInsights]);
 
     if (loading) {
         return (
@@ -255,7 +267,13 @@ export default function DoctorDashboard() {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#F5F7FA" />
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
+            <ScrollView
+                contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 20) }]}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+            >
                 {/* Header */}
                 <View style={styles.header}>
                     <View>

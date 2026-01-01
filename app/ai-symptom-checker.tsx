@@ -3,8 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Activi
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { callGeminiAPI } from '../utils/geminiAPI';
 
 const DOCTOR_CATEGORIES = [
@@ -13,8 +12,9 @@ const DOCTOR_CATEGORIES = [
     "Psychiatrist", "ENT Specialist", "Eye Specialist"
 ];
 
-export default function AiSymptomChecker() {
+export default function AISymptomCheckerScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [symptoms, setSymptoms] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<{ condition: string; specialist: string; advice: string } | null>(null);
@@ -32,7 +32,7 @@ export default function AiSymptomChecker() {
             const prompt = `
                 Act as a medical triage assistant. 
                 User Symptoms: "${symptoms}"
-                
+
                 Task:
                 1. Identify the likely condition (keep it brief).
                 2. Recommend ONE specialist from this list: ${DOCTOR_CATEGORIES.join(", ")}.
@@ -40,38 +40,22 @@ export default function AiSymptomChecker() {
                 
                 Return ONLY valid JSON format like this:
                 {
-                    "condition": "Possible Conditon Name",
+                    "condition": "Possible Condition Name",
                     "specialist": "Exact Category Name from list",
                     "advice": "Simple home advice."
                 }
             `;
 
             const textResponse = await callGeminiAPI(prompt);
-
-            // Clean markdown if present (Gemini sometimes adds ```json ... ```)
             const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsedResult = JSON.parse(cleanJson);
-
             setResult(parsedResult);
-
         } catch (error: any) {
             console.error("AI Error:", error);
-
-            // Provide meaningful error messages based on error type
             let errorMessage = "Failed to analyze symptoms. Please try again.";
-
-            if (error.message?.includes("overloaded")) {
-                errorMessage = "AI service is currently busy. Please wait a moment and try again.";
-            } else if (error.message?.includes("API key")) {
-                errorMessage = "Configuration error. Please contact support.";
-            } else if (error.message?.includes("not found") || error.message?.includes("not supported")) {
-                errorMessage = "Service temporarily unavailable. Please try again later.";
-            } else if (error instanceof SyntaxError || error.message?.includes("JSON")) {
+            if (error instanceof SyntaxError) {
                 errorMessage = "Unable to process AI response. Please try with different symptoms.";
-            } else if (!error.message || error.message === "Network request failed") {
-                errorMessage = "Network error. Please check your internet connection and try again.";
             }
-
             Alert.alert("Analysis Failed", errorMessage);
         } finally {
             setLoading(false);
@@ -80,13 +64,6 @@ export default function AiSymptomChecker() {
 
     const handleFindDoctor = () => {
         if (result?.specialist) {
-            // Navigate back to Home and pass the category to select
-            // We'll use a globally available way or query param, 
-            // but for now let's just go home and user can select.
-            // Better: Push to Home with params if Expo Router supports handled state there,
-            // OR just go to doctor search.
-
-            // Navigate to home with param
             router.navigate({ pathname: "/(tabs)/home", params: { category: result.specialist } });
         }
     };
@@ -107,7 +84,6 @@ export default function AiSymptomChecker() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
             >
                 <ScrollView contentContainerStyle={styles.content}>
-
                     <View style={styles.introCard}>
                         <Text style={styles.introTitle}>Describe your symptoms</Text>
                         <Text style={styles.introSubtitle}>
@@ -170,9 +146,12 @@ export default function AiSymptomChecker() {
                             </View>
                         </View>
                     )}
-
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Added Safe Area Padding to the bottom of the container if needed, 
+                but since it's a scrollview we can add it to the content container style */}
+            <View style={{ height: Math.max(insets.bottom, 20) }} />
         </SafeAreaView>
     );
 }
@@ -229,11 +208,6 @@ const styles = StyleSheet.create({
         color: Colors.text,
         borderWidth: 1,
         borderColor: '#e0e0e0',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3.84,
-        elevation: 2,
     },
     analyzeButton: {
         backgroundColor: Colors.primary,
@@ -242,11 +216,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 16,
         borderRadius: 12,
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
     },
     disabledButton: {
         opacity: 0.7,
@@ -291,7 +260,7 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     recommendationCard: {
-        backgroundColor: '#E3F2FD', // Light Blue
+        backgroundColor: '#E3F2FD',
         borderRadius: 12,
         padding: 15,
         marginTop: 10,

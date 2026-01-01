@@ -1,10 +1,11 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 
 export default function TabLayout() {
+    const insets = useSafeAreaInsets();
     return (
         <Tabs
             screenOptions={{
@@ -20,8 +21,8 @@ export default function TabLayout() {
                     shadowOffset: { width: 0, height: -2 },
                     shadowOpacity: 0.1,
                     shadowRadius: 10,
-                    height: 80, // Taller bar
-                    paddingBottom: 20,
+                    height: 70 + (Platform.OS === 'ios' ? insets.bottom : 0),
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom : 10,
                     paddingTop: 10,
                     borderTopLeftRadius: 30,
                     borderTopRightRadius: 30,

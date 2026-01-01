@@ -1,9 +1,11 @@
-import React from "react";
 import { Tabs } from "expo-router";
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function DoctorLayout() {
+    const insets = useSafeAreaInsets();
     return (
         <Tabs
             screenOptions={{
@@ -13,6 +15,8 @@ export default function DoctorLayout() {
                 tabBarStyle: {
                     backgroundColor: '#ffffff',
                     borderTopColor: '#e0e0e0',
+                    height: Platform.OS === 'ios' ? 85 : 65 + insets.bottom,
+                    paddingBottom: Platform.OS === 'ios' ? insets.bottom : 10,
                 },
             }}
         >

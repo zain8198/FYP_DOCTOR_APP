@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Alert, ScrollView, TouchableOpacity, Platform, SafeAreaView, KeyboardAvoidingView } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, Avatar, Button, TextInput, ActivityIndicator, Chip } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { ref, get, update } from "firebase/database";
@@ -9,6 +10,7 @@ import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function DoctorProfileScreen() {
+    const insets = useSafeAreaInsets();
     const [profile, setProfile] = useState({
         name: '',
         specialty: '',
@@ -305,11 +307,12 @@ export default function DoctorProfileScreen() {
                             activeOutlineColor={Colors.primary}
                         />
 
+
                         <Button
                             mode="contained"
                             onPress={handleSave}
                             loading={saving}
-                            style={styles.saveBtn}
+                            style={[styles.saveBtn, { marginBottom: 10 }]}
                         >
                             Save Changes
                         </Button>
@@ -325,6 +328,7 @@ export default function DoctorProfileScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+            <View style={{ height: Math.max(insets.bottom, 20) }} />
         </SafeAreaView>
     );
 }

@@ -11,11 +11,13 @@ import { Ionicons } from "@expo/vector-icons";
 import Constants from 'expo-constants';
 import { useCache } from "../utils/useCache";
 import { callGeminiAPI } from "../utils/geminiAPI";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DoctorDetailsScreen() {
     const { id } = useLocalSearchParams();
     const theme = useTheme();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const cache = useCache(); // Initialize cache hook
 
     const [doctor, setDoctor] = useState<any>(null);
@@ -430,7 +432,7 @@ export default function DoctorDetailsScreen() {
             </ScrollView>
 
             {/* Bottom Button */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View>
                     <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>Total Price</Text>
                     <Text style={{ fontSize: 20, fontWeight: 'bold', color: Colors.text }}>Rs. {doctor.price || 1000}</Text>

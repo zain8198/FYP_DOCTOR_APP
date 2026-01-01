@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,7 @@ import { PaymentConfig, formatAmount, calculateTotal } from '../utils/paymentCon
 export default function PaymentScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const insets = useSafeAreaInsets();
 
     // Get appointment details from params
     const doctorName = params.doctorName as string || 'Doctor';
@@ -151,7 +153,7 @@ export default function PaymentScreen() {
                 </View>
 
                 {/* Test Mode Notice */}
-                <View style={styles.testNotice}>
+                <View style={[styles.testNotice, { marginBottom: Math.max(insets.bottom, 20) }]}>
                     <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
                     <Text style={styles.testNoticeText}>
                         Test Mode: Use card 4242 4242 4242 4242 for demo

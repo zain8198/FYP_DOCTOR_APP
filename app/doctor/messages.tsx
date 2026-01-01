@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, Image, SafeAreaView, Platform, TextInput, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, Avatar, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ export default function DoctorMessagesScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const currentUserId = auth.currentUser?.uid;
 
     const fetchChats = async () => {
@@ -43,19 +45,14 @@ export default function DoctorMessagesScreen() {
                 const allChats = snapshot.val();
                 const chatList: ChatListItem[] = [];
 
-                // Iterate through all chats
                 for (const chatId in allChats) {
-                    // Check if current doctor is part of this chat
                     if (chatId.includes(currentUserId)) {
                         const chat = allChats[chatId];
-
-                        // Get the other user's ID (patient)
                         const participantIds = chatId.split('_');
                         const patientId = participantIds.find(id => id !== currentUserId);
 
                         if (!patientId) continue;
 
-                        // Fetch patient details
                         let patientName = 'Unknown Patient';
                         let patientImage = null;
 
@@ -71,7 +68,6 @@ export default function DoctorMessagesScreen() {
                             console.log('Error fetching patient:', err);
                         }
 
-                        // Get last message
                         let lastMessage = 'No messages yet';
                         let lastMessageTime = 0;
 
@@ -79,7 +75,6 @@ export default function DoctorMessagesScreen() {
                             lastMessage = chat.lastMessage.text || 'No messages yet';
                             lastMessageTime = chat.lastMessage.timestamp || 0;
                         } else if (chat.messages) {
-                            // Fallback: Get last message from messages array
                             const messages = Object.values(chat.messages) as any[];
                             if (messages.length > 0) {
                                 const sorted = messages.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -99,9 +94,7 @@ export default function DoctorMessagesScreen() {
                     }
                 }
 
-                // Sort by last message time (most recent first)
                 chatList.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
-
                 setChats(chatList);
                 setFilteredChats(chatList);
                 setLoading(false);
@@ -119,7 +112,6 @@ export default function DoctorMessagesScreen() {
     }, []);
 
     useEffect(() => {
-        // Filter chats based on search query
         if (searchQuery.trim() === '') {
             setFilteredChats(chats);
         } else {
@@ -137,21 +129,17 @@ export default function DoctorMessagesScreen() {
 
     const formatTime = (timestamp: number) => {
         if (!timestamp) return '';
-
         const now = new Date();
         const messageDate = new Date(timestamp);
         const diffInHours = (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
 
         if (diffInHours < 24) {
-            // Show time if today
             return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } else if (diffInHours < 48) {
             return 'Yesterday';
         } else if (diffInHours < 168) {
-            // Show day name if within a week
             return messageDate.toLocaleDateString([], { weekday: 'short' });
         } else {
-            // Show date if older
             return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
         }
     };
@@ -203,12 +191,10 @@ export default function DoctorMessagesScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Messages</Text>
             </View>
 
-            {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={20} color={Colors.textSecondary} style={styles.searchIcon} />
                 <TextInput
@@ -225,7 +211,6 @@ export default function DoctorMessagesScreen() {
                 )}
             </View>
 
-            {/* Chat List */}
             {filteredChats.length === 0 ? (
                 <View style={styles.emptyState}>
                     <Ionicons name="chatbubbles-outline" size={80} color="#DDD" />
@@ -241,7 +226,7 @@ export default function DoctorMessagesScreen() {
                     data={filteredChats}
                     keyExtractor={(item) => item.chatId}
                     renderItem={renderChatItem}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
