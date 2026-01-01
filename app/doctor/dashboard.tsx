@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, FlatList, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Platform, StatusBar } from "react-native";
 import { Text, Avatar, ActivityIndicator } from "react-native-paper";
-import { ref, get, update } from "firebase/database";
+import { ref, get, update, onValue } from "firebase/database";
 import { auth, db } from "../../firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
@@ -79,54 +79,72 @@ export default function DoctorDashboard() {
                     }
                 }
 
-                // 2. Get Appointments & Resolve Patient Names
+                // 2. Get Appointments with REAL-TIME listener
                 const aptRef = ref(db, "appointments");
-                const aptSnap = await get(aptRef);
 
-                if (aptSnap.exists()) {
-                    const allApts = aptSnap.val();
-                    let myApts: any[] = [];
-                    let uniquePatients = new Set();
+                // Use onValue for real-time updates
+                const unsubscribe = onValue(aptRef, async (aptSnap) => {
+                    if (aptSnap.exists()) {
+                        const allApts = aptSnap.val();
+                        let myApts: any[] = [];
+                        let uniquePatients = new Set();
 
-                    // Iterate over User IDs (Parent Nodes)
-                    for (let userId in allApts) {
-                        const userApts = allApts[userId];
+                        // Iterate over User IDs (Parent Nodes)
+                        for (let userId in allApts) {
+                            const userApts = allApts[userId];
 
-                        // Fetch User Details for this ID
-                        const userRef = ref(db, `users/${userId}`);
-                        const userSnap = await get(userRef);
-                        const userData = userSnap.exists() ? userSnap.val() : {};
+                            // Fetch User Details for this ID
+                            const userRef = ref(db, `users/${userId}`);
+                            const userSnap = await get(userRef);
+                            const userData = userSnap.exists() ? userSnap.val() : {};
 
-                        for (let aptId in userApts) {
-                            const apt = userApts[aptId];
+                            for (let aptId in userApts) {
+                                const apt = userApts[aptId];
 
-                            // Match Doctor (by Name or ID)
-                            const isMyPatient = (apt.doctor === docData.name) || (apt.doctorId === auth.currentUser.uid);
+                                // Match Doctor (by Name or ID)
+                                const isMyPatient = (apt.doctor === docData.name) || (apt.doctorId === auth.currentUser.uid);
 
-                            if (isMyPatient) {
-                                uniquePatients.add(userId);
-                                myApts.push({
-                                    id: aptId,
-                                    patientId: userId,
-                                    // Robust Name Logic: Profile Name -> Appointment Name -> Fallback
-                                    patientName: userData.name || apt.patientName || "Guest Patient",
-                                    patientImage: userData.image, // Could be null
-                                    ...apt,
-                                    status: apt.status || 'Upcoming'
-                                });
+                                if (isMyPatient) {
+                                    uniquePatients.add(userId);
+                                    myApts.push({
+                                        id: aptId,
+                                        patientId: userId,
+                                        // Robust Name Logic: Profile Name -> Appointment Name -> Fallback
+                                        patientName: userData.name || apt.patientName || "Guest Patient",
+                                        patientImage: userData.image, // Could be null
+                                        ...apt,
+                                        status: apt.status || 'Upcoming'
+                                    });
+                                }
                             }
                         }
+                        setAppointments(myApts);
+                        setStats(prev => ({ ...prev, patients: uniquePatients.size }));
+                    } else {
+                        setAppointments([]);
                     }
-                    setAppointments(myApts);
-                    setStats(prev => ({ ...prev, patients: uniquePatients.size }));
-                }
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Real-time appointments error:", error);
+                    setLoading(false);
+                });
+
+                // Return cleanup function to unsubscribe when component unmounts
+                return unsubscribe;
             } catch (error) {
                 console.error("Dashboard Error:", error);
-            } finally {
                 setLoading(false);
             }
         };
-        fetchData();
+
+        const unsubscribePromise = fetchData();
+
+        // Cleanup function
+        return () => {
+            unsubscribePromise.then(unsub => {
+                if (unsub) unsub();
+            });
+        };
     }, []);
 
     // Generate AI Feedback Insights

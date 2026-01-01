@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, FlatList, ActivityIndicator, SafeAreaView, TouchableOpacity, StatusBar, Platform } from "react-native";
 import { Text, Avatar, useTheme } from "react-native-paper";
-import { ref, get } from "firebase/database";
+import { ref, get, onValue } from "firebase/database";
 import { auth, db } from "../../firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
@@ -16,13 +16,14 @@ export default function DoctorFeedbackScreen() {
     const theme = useTheme();
 
     useEffect(() => {
-        const fetchReviews = async () => {
-            if (!auth.currentUser) return;
-            setLoading(true);
-            try {
-                const reviewsRef = ref(db, `reviews/${auth.currentUser.uid}`);
-                const snapshot = await get(reviewsRef);
+        if (!auth.currentUser) return;
 
+        setLoading(true);
+        const reviewsRef = ref(db, `reviews/${auth.currentUser.uid}`);
+
+        // Use onValue for real-time updates
+        const unsubscribe = onValue(reviewsRef, (snapshot) => {
+            try {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     const parsedReviews = Object.keys(data).map(key => ({
@@ -42,15 +43,21 @@ export default function DoctorFeedbackScreen() {
                     setReviewCount(parsedReviews.length);
                 } else {
                     setReviews([]);
+                    setTotalRating(0);
+                    setReviewCount(0);
                 }
             } catch (error) {
-                console.error("Error fetching reviews:", error);
+                console.error("Error processing reviews:", error);
             } finally {
                 setLoading(false);
             }
-        };
+        }, (error) => {
+            console.error("Real-time reviews error:", error);
+            setLoading(false);
+        });
 
-        fetchReviews();
+        // Cleanup function
+        return () => unsubscribe();
     }, []);
 
     const renderStars = (rating: number) => {
