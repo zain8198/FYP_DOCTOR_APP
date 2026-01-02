@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { SPLASH_BASE64 } from '../constants/SplashIconBase64';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -10,7 +11,8 @@ import Animated, {
     Easing
 } from 'react-native-reanimated';
 
-const SPLASH_ICON = require('../assets/images/splash-icon.png');
+// Removed require call to avoid Metro asset bundling issues
+const SPLASH_ICON = { uri: SPLASH_BASE64 };
 
 interface AnimatedSplashScreenProps {
     onAnimationFinish: () => void;
