@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Dimensions, ActivityIndicator, PermissionsAndroid } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
@@ -34,7 +34,18 @@ export default function VideoCallScreen() {
     const engine = useRef<IRtcEngine | null>(null);
 
     useEffect(() => {
-        initAgora();
+        const prepare = async () => {
+            if (Platform.OS === 'android') {
+                const granted = await requestPermissions();
+                if (!granted) {
+                    console.error('Camera or Audio permission denied');
+                    return;
+                }
+            }
+            initAgora();
+        };
+
+        prepare();
 
         const timer = setInterval(() => {
             setCallDuration(prev => prev + 1);
@@ -45,6 +56,25 @@ export default function VideoCallScreen() {
             leaveChannel();
         };
     }, []);
+
+    const requestPermissions = async () => {
+        if (Platform.OS === 'android') {
+            try {
+                const granted = await PermissionsAndroid.requestMultiple([
+                    PermissionsAndroid.PERMISSIONS.CAMERA,
+                    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+                ]);
+                return (
+                    granted[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
+                    granted[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED
+                );
+            } catch (err) {
+                console.warn(err);
+                return false;
+            }
+        }
+        return true;
+    };
 
     const initAgora = async () => {
         try {
@@ -77,7 +107,9 @@ export default function VideoCallScreen() {
             engine.current.startPreview();
 
             // Join the channel (using appointmentId as channel name)
-            engine.current.joinChannel('', appointmentId as string, 0, {
+            // Passing null as token since App Certificate is DISABLED in Agora Console
+            console.log('Joining channel with App ID:', AGORA_APP_ID, 'Channel:', appointmentId);
+            engine.current.joinChannel(null as any, appointmentId as string, 0, {
                 clientRoleType: ClientRoleType.ClientRoleBroadcaster,
             });
 
