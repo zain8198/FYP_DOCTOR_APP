@@ -62,7 +62,10 @@ module.exports = {
             EXPO_PUBLIC_GEMINI_API_KEY_8: process.env.EXPO_PUBLIC_GEMINI_API_KEY_8,
             EXPO_PUBLIC_GEMINI_API_KEY_9: process.env.EXPO_PUBLIC_GEMINI_API_KEY_9,
             EXPO_PUBLIC_GEMINI_API_KEY_10: process.env.EXPO_PUBLIC_GEMINI_API_KEY_10,
-            EXPO_PUBLIC_AGORA_APP_ID: process.env.EXPO_PUBLIC_AGORA_APP_ID
+            EXPO_PUBLIC_AGORA_APP_ID: process.env.EXPO_PUBLIC_AGORA_APP_ID,
+            eas: {
+                projectId: "e96d9793-cb7f-4624-ba28-5b875eb243b6"
+            }
         }
     }
 };
