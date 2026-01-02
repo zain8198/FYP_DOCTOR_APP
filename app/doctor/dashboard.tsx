@@ -23,6 +23,30 @@ export default function DoctorDashboardScreen() {
     const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
 
+    const handleStartCall = async (patientId: string, appointmentId: string, patientName: string) => {
+        try {
+            const aptRef = ref(db, `appointments/${patientId}/${appointmentId}`);
+            await update(aptRef, {
+                callStatus: 'active',
+                lastCallTimestamp: Date.now()
+            });
+
+            router.push({
+                pathname: "/call",
+                params: {
+                    appointmentId,
+                    patientId,
+                    doctorName: doctorProfile?.name || "Doctor",
+                    patientName,
+                    role: 'doctor'
+                }
+            } as any);
+        } catch (error) {
+            console.error("Error starting call:", error);
+            alert("Failed to start call");
+        }
+    };
+
     const handleStatusUpdate = async (patientId: string, appointmentId: string, newStatus: string) => {
         try {
             // Update the specific appointment node
@@ -58,7 +82,7 @@ export default function DoctorDashboardScreen() {
             const cacheKey = `doctor_own_profile_${auth.currentUser.uid}`;
             const cachedProfile = cache.getCachedData<any>(cacheKey);
 
-            let docData = { name: "Doctor" };
+            let docData: any = { name: "Doctor" };
             if (cachedProfile) {
                 docData = cachedProfile;
                 setDoctorProfile(docData);
@@ -86,42 +110,69 @@ export default function DoctorDashboardScreen() {
 
             // Use onValue for real-time updates
             const unsubscribe = onValue(aptRef, async (aptSnap) => {
+                const currentUser = auth.currentUser;
+                if (!currentUser) return;
+
                 if (aptSnap.exists()) {
                     const allApts = aptSnap.val();
                     let myApts: any[] = [];
                     let uniquePatients = new Set();
 
-                    // Iterate over User IDs (Parent Nodes)
+                    // Use Promise.all to fetch all user profiles in parallel
+                    const userIds = Object.keys(allApts);
+                    const userProfiles: { [key: string]: any } = {};
+
+                    await Promise.all(userIds.map(async (uid) => {
+                        const userCacheKey = `user_profile_simple_${uid}`;
+                        const cachedUser = cache.getCachedData<any>(userCacheKey);
+                        if (cachedUser) {
+                            userProfiles[uid] = cachedUser;
+                        } else {
+                            const userRef = ref(db, `users/${uid}`);
+                            const userSnap = await get(userRef);
+                            const userData = userSnap.exists() ? userSnap.val() : {};
+                            userProfiles[uid] = userData;
+                            cache.setCachedData(userCacheKey, userData, 30 * 60 * 1000); // Cache for 30 mins
+                        }
+                    }));
+
                     for (let userId in allApts) {
                         const userApts = allApts[userId];
-
-                        // Fetch User Details for this ID
-                        const userRef = ref(db, `users/${userId}`);
-                        const userSnap = await get(userRef);
-                        const userData = userSnap.exists() ? userSnap.val() : {};
+                        const userData = userProfiles[userId] || {};
 
                         for (let aptId in userApts) {
                             const apt = userApts[aptId];
 
                             // Match Doctor (by Name or ID)
-                            const isMyPatient = (apt.doctor === docData.name) || (apt.doctorId === auth.currentUser.uid);
+                            const isMyPatient = (apt.doctor === docData.name) || (apt.doctorId === currentUser.uid);
 
                             if (isMyPatient) {
                                 uniquePatients.add(userId);
                                 myApts.push({
                                     id: aptId,
                                     patientId: userId,
-                                    // Robust Name Logic: Profile Name -> Appointment Name -> Fallback
                                     patientName: userData.name || apt.patientName || "Guest Patient",
-                                    patientImage: userData.image, // Could be null
+                                    patientImage: userData.image,
                                     ...apt,
                                     status: apt.status || 'Upcoming'
                                 });
                             }
                         }
                     }
+
+                    // Sort appointments by date (newest first)
+                    myApts.sort((a, b) => {
+                        const dateA = new Date(`${a.date || ''} ${a.time || ''}`).getTime();
+                        const dateB = new Date(`${b.date || ''} ${b.time || ''}`).getTime();
+                        return dateB - dateA;
+                    });
+
                     setAppointments(myApts);
-                    setStats(prev => ({ ...prev, patients: uniquePatients.size }));
+                    setStats(prev => {
+                        // Only update if value actually changed to prevent unnecessary re-renders
+                        if (prev.patients === uniquePatients.size) return prev;
+                        return { ...prev, patients: uniquePatients.size };
+                    });
                 } else {
                     setAppointments([]);
                 }
@@ -268,7 +319,7 @@ export default function DoctorDashboardScreen() {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#F5F7FA" />
             <ScrollView
-                contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 20) }]}
+                contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -387,6 +438,16 @@ export default function DoctorDashboardScreen() {
                                                 <Ionicons name="close" size={16} color="white" />
                                             </TouchableOpacity>
                                         </>
+                                    )}
+
+                                    {(item.status === 'confirmed' || item.status === 'upcoming') && (
+                                        <TouchableOpacity
+                                            style={[styles.actionBtn, { backgroundColor: '#4CAF50', width: 'auto', paddingHorizontal: 10 }]}
+                                            onPress={() => handleStartCall(item.patientId, item.id, item.patientName)}
+                                        >
+                                            <Ionicons name="videocam" size={16} color="white" />
+                                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, marginLeft: 4 }}>Call</Text>
+                                        </TouchableOpacity>
                                     )}
 
                                     {(item.status === 'confirmed' || item.status === 'upcoming') && (

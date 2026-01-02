@@ -26,6 +26,19 @@ export default function AppointmentsScreen() {
     const [healthSuggestions, setHealthSuggestions] = useState<any[]>([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
+    const handleJoinCall = (appointment: any) => {
+        router.push({
+            pathname: "/call",
+            params: {
+                appointmentId: appointment.id,
+                patientId: auth.currentUser?.uid,
+                doctorName: appointment.doctor,
+                patientName: auth.currentUser?.displayName || "Patient",
+                role: 'patient'
+            }
+        } as any);
+    };
+
     const handleRatePress = (doctor: any) => {
         // Ensure we have a valid doctorId
         const doctorId = doctor.doctorId;
@@ -354,6 +367,16 @@ export default function AppointmentsScreen() {
                                         </TouchableOpacity>
                                     )}
 
+                                    {item.callStatus === 'active' && (
+                                        <TouchableOpacity
+                                            style={[styles.rateButton, { backgroundColor: '#4CAF50' }]}
+                                            onPress={() => handleJoinCall(item)}
+                                        >
+                                            <Ionicons name="videocam" size={18} color="white" />
+                                            <Text style={[styles.rateButtonText, { marginLeft: 8 }]}>Join Call</Text>
+                                        </TouchableOpacity>
+                                    )}
+
                                     {isCompleted && (
                                         <TouchableOpacity
                                             style={styles.rateButton}
@@ -459,6 +482,18 @@ export default function AppointmentsScreen() {
                         {/* Fixed Footer */}
                         {selectedAppointment && (
                             <View style={styles.modalFooter}>
+                                {selectedAppointment.callStatus === 'active' && (
+                                    <Button
+                                        mode="contained"
+                                        buttonColor="#4CAF50"
+                                        onPress={() => { setDetailsModalVisible(false); handleJoinCall(selectedAppointment); }}
+                                        style={[styles.fullWidthButton, { marginBottom: 10 }]}
+                                        icon="videocam"
+                                    >
+                                        Join Video Call
+                                    </Button>
+                                )}
+
                                 {selectedAppointment.status === 'pending' || selectedAppointment.status === 'confirmed' ? (
                                     <Button
                                         mode="contained"

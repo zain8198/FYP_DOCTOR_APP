@@ -10,14 +10,25 @@ module.exports = {
         userInterfaceStyle: "automatic",
         newArchEnabled: true,
         ios: {
-            supportsTablet: true
+            supportsTablet: true,
+            infoPlist: {
+                NSCameraUsageDescription: "Allow $(PRODUCT_NAME) to access your camera for video consultations.",
+                NSMicrophoneUsageDescription: "Allow $(PRODUCT_NAME) to access your microphone for video consultations."
+            }
         },
         android: {
             package: "com.yovari9016.doconcall",
             adaptiveIcon: {
                 foregroundImage: "./assets/images/adaptive-icon.png",
                 backgroundColor: "#ffffff"
-            }
+            },
+            permissions: [
+                "android.permission.CAMERA",
+                "android.permission.RECORD_AUDIO",
+                "android.permission.MODIFY_AUDIO_SETTINGS",
+                "android.permission.ACCESS_NETWORK_STATE",
+                "android.permission.INTERNET"
+            ]
         },
         web: {
             bundler: "metro",
@@ -50,7 +61,8 @@ module.exports = {
             EXPO_PUBLIC_GEMINI_API_KEY_7: process.env.EXPO_PUBLIC_GEMINI_API_KEY_7,
             EXPO_PUBLIC_GEMINI_API_KEY_8: process.env.EXPO_PUBLIC_GEMINI_API_KEY_8,
             EXPO_PUBLIC_GEMINI_API_KEY_9: process.env.EXPO_PUBLIC_GEMINI_API_KEY_9,
-            EXPO_PUBLIC_GEMINI_API_KEY_10: process.env.EXPO_PUBLIC_GEMINI_API_KEY_10
+            EXPO_PUBLIC_GEMINI_API_KEY_10: process.env.EXPO_PUBLIC_GEMINI_API_KEY_10,
+            EXPO_PUBLIC_AGORA_APP_ID: process.env.EXPO_PUBLIC_AGORA_APP_ID
         }
     }
 };

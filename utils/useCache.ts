@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 
 interface CacheEntry<T> {
     data: T;
@@ -88,10 +88,10 @@ export function useCache(defaultDuration: number = DEFAULT_CACHE_DURATION) {
         return Date.now() <= entry.expiresAt;
     };
 
-    return {
+    return useMemo(() => ({
         getCachedData,
         setCachedData,
         clearCache,
         isCached,
-    };
+    }), []);
 }
