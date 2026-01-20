@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Dimensions, ActivityIndicator, PermissionsAndroid } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform, Dimensions, ActivityIndicator, PermissionsAndroid, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
@@ -88,6 +88,8 @@ export default function VideoCallScreen() {
                 onJoinChannelSuccess: (connection: RtcConnection, elapsed: number) => {
                     console.log('Successfully joined channel: ', connection.channelId);
                     setIsJoined(true);
+                    // ALERT FOR DEBUGGING
+                    // Alert.alert("Connected", "Successfully joined the call channel!");
                 },
                 onUserJoined: (connection: RtcConnection, uid: number, elapsed: number) => {
                     console.log('Remote user joined with uid: ', uid);
@@ -100,6 +102,10 @@ export default function VideoCallScreen() {
                 onLeaveChannel: (connection: RtcConnection, stats: any) => {
                     console.log('Left channel');
                     setIsJoined(false);
+                },
+                onError: (err: number, msg: string) => {
+                    console.error("Agora Error:", err, msg);
+                    Alert.alert("Call Error", `Code: ${err}, Msg: ${msg}`);
                 }
             });
 
@@ -107,11 +113,20 @@ export default function VideoCallScreen() {
             engine.current.startPreview();
 
             // Join the channel (using appointmentId as channel name)
+            if (!appointmentId) {
+                Alert.alert("Error", "Invalid Appointment ID. Cannot join call.");
+                return;
+            }
+
             // Passing null as token since App Certificate is DISABLED in Agora Console
             console.log('Joining channel with App ID:', AGORA_APP_ID, 'Channel:', appointmentId);
-            engine.current.joinChannel(null as any, appointmentId as string, 0, {
+            const result = engine.current.joinChannel(null as any, appointmentId as string, 0, {
                 clientRoleType: ClientRoleType.ClientRoleBroadcaster,
             });
+
+            if (result !== 0) {
+                Alert.alert("Join Failed", `AgoraSDK Error: ${result}`);
+            }
 
         } catch (e) {
             console.error('Agora init error:', e);

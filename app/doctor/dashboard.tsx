@@ -22,6 +22,7 @@ export default function DoctorDashboardScreen() {
     const cache = useCache(); // Initialize cache hook
     const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
+    const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
 
     const handleStartCall = async (patientId: string, appointmentId: string, patientName: string) => {
         try {
@@ -160,8 +161,22 @@ export default function DoctorDashboardScreen() {
                         }
                     }
 
-                    // Sort appointments by date (newest first)
+                    // Sort appointments: Pending first (need action), then by date
                     myApts.sort((a, b) => {
+                        // Priority: pending > confirmed/upcoming > completed > cancelled
+                        const priority: Record<string, number> = {
+                            'pending': 0,
+                            'confirmed': 1,
+                            'upcoming': 1,
+                            'completed': 2,
+                            'cancelled': 3
+                        };
+                        const priorityA = priority[a.status?.toLowerCase()] ?? 4;
+                        const priorityB = priority[b.status?.toLowerCase()] ?? 4;
+
+                        if (priorityA !== priorityB) return priorityA - priorityB;
+
+                        // Same priority - sort by date (newest first)
                         const dateA = new Date(`${a.date || ''} ${a.time || ''}`).getTime();
                         const dateB = new Date(`${b.date || ''} ${b.time || ''}`).getTime();
                         return dateB - dateA;
@@ -386,90 +401,129 @@ export default function DoctorDashboardScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Appointments List */}
-                {appointments.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="calendar-outline" size={60} color="#DDD" />
-                        <Text style={styles.emptyText}>No appointments scheduled today.</Text>
-                    </View>
-                ) : (
-                    appointments.map((item) => (
-                        <View key={item.id} style={styles.appointmentCard}>
-                            <View style={styles.cardHeader}>
-                                <View style={styles.patientInfo}>
-                                    {item.patientImage ? (
-                                        <Avatar.Image size={50} source={{ uri: item.patientImage }} />
-                                    ) : (
-                                        <Avatar.Text size={50} label={item.patientName.substring(0, 2).toUpperCase()} style={{ backgroundColor: Colors.primary }} color="white" />
-                                    )}
-                                    <View style={{ marginLeft: 15 }}>
-                                        <Text style={styles.patientName}>{item.patientName}</Text>
-                                        <Text style={styles.problemText}>{item.details || "General Checkup"}</Text>
-                                    </View>
-                                </View>
-                                <View style={[styles.badge, { backgroundColor: getStatusColor(item.status).bg }]}>
-                                    <Text style={[styles.badgeText, { color: getStatusColor(item.status).text }]}>
-                                        {item.status}
+                {/* Filter Tabs */}
+                <View style={styles.filterContainer}>
+                    {(['all', 'pending', 'confirmed', 'completed'] as const).map((filter) => (
+                        <TouchableOpacity
+                            key={filter}
+                            style={[
+                                styles.filterTab,
+                                activeFilter === filter && styles.activeFilterTab
+                            ]}
+                            onPress={() => setActiveFilter(filter)}
+                        >
+                            <Text style={[
+                                styles.filterTabText,
+                                activeFilter === filter && styles.activeFilterTabText
+                            ]}>
+                                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                            </Text>
+                            {filter === 'pending' && appointments.filter(a => a.status?.toLowerCase() === 'pending').length > 0 && (
+                                <View style={styles.filterBadge}>
+                                    <Text style={styles.filterBadgeText}>
+                                        {appointments.filter(a => a.status?.toLowerCase() === 'pending').length}
                                     </Text>
                                 </View>
-                            </View>
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
-                            <View style={styles.divider} />
+                {/* Appointments List */}
+                {(() => {
+                    const filteredAppointments = appointments.filter(apt => {
+                        if (activeFilter === 'all') return true;
+                        return apt.status?.toLowerCase() === activeFilter;
+                    });
 
-                            <View style={styles.cardFooter}>
-                                <View style={styles.timeInfo}>
-                                    <Ionicons name="time-outline" size={18} color={Colors.primary} />
-                                    <Text style={styles.timeText}>{item.date || "Today, 10:00 AM"}</Text>
-                                </View>
-                                <View style={styles.actions}>
-                                    {/* Status Actions */}
-                                    {item.status === 'pending' && (
-                                        <>
-                                            <TouchableOpacity
-                                                style={[styles.actionBtn, { backgroundColor: '#4CAF50' }]}
-                                                onPress={() => handleStatusUpdate(item.patientId, item.id, 'confirmed')}
-                                            >
-                                                <Ionicons name="checkmark" size={16} color="white" />
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={[styles.actionBtn, { backgroundColor: '#F44336' }]}
-                                                onPress={() => handleStatusUpdate(item.patientId, item.id, 'cancelled')}
-                                            >
-                                                <Ionicons name="close" size={16} color="white" />
-                                            </TouchableOpacity>
-                                        </>
-                                    )}
-
-                                    {(item.status === 'confirmed' || item.status === 'upcoming') && (
-                                        <TouchableOpacity
-                                            style={[styles.actionBtn, { backgroundColor: '#4CAF50', width: 'auto', paddingHorizontal: 10 }]}
-                                            onPress={() => handleStartCall(item.patientId, item.id, item.patientName)}
-                                        >
-                                            <Ionicons name="videocam" size={16} color="white" />
-                                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, marginLeft: 4 }}>Call</Text>
-                                        </TouchableOpacity>
-                                    )}
-
-                                    {(item.status === 'confirmed' || item.status === 'upcoming') && (
-                                        <TouchableOpacity
-                                            style={[styles.actionBtn, { backgroundColor: '#2196F3', width: 'auto', paddingHorizontal: 12 }]}
-                                            onPress={() => handleStatusUpdate(item.patientId, item.id, 'completed')}
-                                        >
-                                            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>Complete</Text>
-                                        </TouchableOpacity>
-                                    )}
-
-                                    <TouchableOpacity
-                                        style={[styles.iconBtn, { backgroundColor: Colors.primary }]}
-                                        onPress={() => router.push({ pathname: "/chat/[id]", params: { id: item.patientId, name: item.patientName, image: item.patientImage } } as any)}
-                                    >
-                                        <Ionicons name="chatbubble-ellipses" size={18} color="#FFF" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
+                    return filteredAppointments.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="calendar-outline" size={60} color="#DDD" />
+                            <Text style={styles.emptyText}>
+                                {activeFilter === 'all'
+                                    ? 'No appointments scheduled.'
+                                    : `No ${activeFilter} appointments.`}
+                            </Text>
                         </View>
-                    ))
-                )}
+                    ) : (
+                        filteredAppointments.map((item) => (
+                            <View key={item.id} style={styles.appointmentCard}>
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.patientInfo}>
+                                        {item.patientImage ? (
+                                            <Avatar.Image size={50} source={{ uri: item.patientImage }} />
+                                        ) : (
+                                            <Avatar.Text size={50} label={item.patientName.substring(0, 2).toUpperCase()} style={{ backgroundColor: Colors.primary }} color="white" />
+                                        )}
+                                        <View style={{ marginLeft: 15 }}>
+                                            <Text style={styles.patientName}>{item.patientName}</Text>
+                                            <Text style={styles.problemText}>{item.details || "General Checkup"}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={[styles.badge, { backgroundColor: getStatusColor(item.status).bg }]}>
+                                        <Text style={[styles.badgeText, { color: getStatusColor(item.status).text }]}>
+                                            {item.status}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.divider} />
+
+                                <View style={styles.cardFooter}>
+                                    <View style={styles.timeInfo}>
+                                        <Ionicons name="time-outline" size={18} color={Colors.primary} />
+                                        <Text style={styles.timeText}>{item.date || "Today, 10:00 AM"}</Text>
+                                    </View>
+                                    <View style={styles.actions}>
+                                        {/* Status Actions */}
+                                        {item.status === 'pending' && (
+                                            <>
+                                                <TouchableOpacity
+                                                    style={[styles.actionBtn, { backgroundColor: '#4CAF50' }]}
+                                                    onPress={() => handleStatusUpdate(item.patientId, item.id, 'confirmed')}
+                                                >
+                                                    <Ionicons name="checkmark" size={16} color="white" />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    style={[styles.actionBtn, { backgroundColor: '#F44336' }]}
+                                                    onPress={() => handleStatusUpdate(item.patientId, item.id, 'cancelled')}
+                                                >
+                                                    <Ionicons name="close" size={16} color="white" />
+                                                </TouchableOpacity>
+                                            </>
+                                        )}
+
+                                        {(item.status === 'confirmed' || item.status === 'upcoming') && (
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, { backgroundColor: '#4CAF50', width: 'auto', paddingHorizontal: 10 }]}
+                                                onPress={() => handleStartCall(item.patientId, item.id, item.patientName)}
+                                            >
+                                                <Ionicons name="videocam" size={16} color="white" />
+                                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, marginLeft: 4 }}>Call</Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        {(item.status === 'confirmed' || item.status === 'upcoming') && (
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, { backgroundColor: '#2196F3', width: 'auto', paddingHorizontal: 12 }]}
+                                                onPress={() => handleStatusUpdate(item.patientId, item.id, 'completed')}
+                                            >
+                                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12 }}>Complete</Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        <TouchableOpacity
+                                            style={[styles.iconBtn, { backgroundColor: Colors.primary }]}
+                                            onPress={() => router.push({ pathname: "/chat/[id]", params: { id: item.patientId, name: item.patientName, image: item.patientImage } } as any)}
+                                        >
+                                            <Ionicons name="chatbubble-ellipses" size={18} color="#FFF" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        ))
+                    );
+                })()}
             </ScrollView>
         </SafeAreaView>
     );
@@ -704,5 +758,44 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#2196F3',
         marginLeft: 6,
+    },
+    filterContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        marginBottom: 16,
+        gap: 8,
+    },
+    filterTab: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#F0F0F0',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    activeFilterTab: {
+        backgroundColor: Colors.primary,
+    },
+    filterTabText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#666',
+    },
+    activeFilterTabText: {
+        color: '#FFF',
+    },
+    filterBadge: {
+        backgroundColor: '#FF5722',
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 6,
+    },
+    filterBadgeText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: 'bold',
     }
 });

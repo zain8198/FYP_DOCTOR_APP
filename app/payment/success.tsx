@@ -44,7 +44,7 @@ export default function PaymentSuccessScreen() {
                 patientAge: params.patientAge || '',
                 patientGender: params.patientGender || '',
                 symptoms: params.symptoms || '',
-                status: 'Upcoming',
+                status: 'pending',
                 paymentStatus: 'Paid',
                 transactionId: transactionId,
                 amount: amount,
@@ -92,7 +92,7 @@ export default function PaymentSuccessScreen() {
                 {/* Success Message */}
                 <Text style={styles.title}>Payment Successful!</Text>
                 <Text style={styles.subtitle}>
-                    Your appointment has been confirmed
+                    Your appointment is pending doctor confirmation
                 </Text>
 
                 {/* Transaction Details */}

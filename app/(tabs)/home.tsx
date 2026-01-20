@@ -37,6 +37,7 @@ export default function HomeScreen() {
         const doctorsRef = ref(db, 'doctors');
         const unsubscribe = onValue(doctorsRef, (snapshot) => {
             const data = snapshot.val();
+            console.log("🔥 Firebase RAW doctors data:", data);
             const doctorList = data ? Object.keys(data)
                 .map(key => ({
                     id: key,
@@ -49,6 +50,7 @@ export default function HomeScreen() {
                 }))
                 .filter(doc => doc.status === 'approved')
                 : [];
+            console.log("✅ Filtered APPROVED doctors:", doctorList);
             setDoctors(doctorList);
         });
 
