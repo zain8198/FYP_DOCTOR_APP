@@ -16,7 +16,7 @@ export default function PaymentFailedScreen() {
     };
 
     const handleCancel = () => {
-        router.navigate('/(tabs)');
+        router.navigate('/(tabs)/home');
     };
 
     return (

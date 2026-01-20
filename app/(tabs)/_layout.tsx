@@ -76,6 +76,23 @@ export default function TabLayout() {
                             focused && styles.activeIconContainer
                         ]}>
                             <Ionicons
+                                name={focused ? "sparkles" : "sparkles-outline"}
+                                size={24}
+                                color={focused ? Colors.white : Colors.textSecondary}
+                            />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="messages"
+                options={{
+                    tabBarIcon: ({ focused }) => (
+                        <View style={[
+                            styles.iconContainer,
+                            focused && styles.activeIconContainer
+                        ]}>
+                            <Ionicons
                                 name={focused ? "chatbubbles" : "chatbubbles-outline"}
                                 size={24}
                                 color={focused ? Colors.white : Colors.textSecondary}

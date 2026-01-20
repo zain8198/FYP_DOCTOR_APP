@@ -10,11 +10,22 @@ import { ref, push } from 'firebase/database';
 import Constants from 'expo-constants';
 import { callGeminiAPI } from '../utils/geminiAPI';
 
+interface Medicine {
+    name: string;
+    dosage: string;
+    frequency: string;
+}
+
+interface PrescriptionAnalysis {
+    medicines: Medicine[];
+    advice: string;
+}
+
 export default function PrescriptionAnalyzer() {
     const router = useRouter();
-    const [image, setImage] = useState(null);
+    const [image, setImage] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
-    const [results, setResults] = useState(null);
+    const [results, setResults] = useState<PrescriptionAnalysis | null>(null);
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -30,7 +41,7 @@ export default function PrescriptionAnalyzer() {
             base64: true,
         });
 
-        if (!result.canceled && result.assets[0].base64) {
+        if (!result.canceled && result.assets[0].base64 && result.assets[0].uri) {
             setImage(result.assets[0].uri);
             analyzePrescription(result.assets[0].base64);
         }
@@ -49,13 +60,13 @@ export default function PrescriptionAnalyzer() {
             base64: true,
         });
 
-        if (!result.canceled && result.assets[0].base64) {
+        if (!result.canceled && result.assets[0].base64 && result.assets[0].uri) {
             setImage(result.assets[0].uri);
             analyzePrescription(result.assets[0].base64);
         }
     };
 
-    const analyzePrescription = async (base64Image) => {
+    const analyzePrescription = async (base64Image: string) => {
         setAnalyzing(true);
         setResults(null);
 

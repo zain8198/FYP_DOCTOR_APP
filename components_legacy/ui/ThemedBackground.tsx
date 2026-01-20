@@ -1,9 +1,14 @@
 import React from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ViewStyle } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function ThemedBackground({ children, style = {} }) {
+interface Props {
+    children: React.ReactNode;
+    style?: ViewStyle;
+}
+
+export default function ThemedBackground({ children, style = {} }: Props) {
     const theme = useTheme();
 
     return (

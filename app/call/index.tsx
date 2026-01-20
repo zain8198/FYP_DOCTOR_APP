@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { auth, db } from '../../firebase';
-import { ref, update } from 'firebase/database';
+import { ref, update, onValue } from 'firebase/database';
 import {
     createAgoraRtcEngine,
     ChannelProfileType,
@@ -30,6 +30,7 @@ export default function VideoCallScreen() {
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
     const [callDuration, setCallDuration] = useState(0);
+    const [isEngineReady, setIsEngineReady] = useState(false);
 
     const engine = useRef<IRtcEngine | null>(null);
 
@@ -51,11 +52,26 @@ export default function VideoCallScreen() {
             setCallDuration(prev => prev + 1);
         }, 1000);
 
+        // Listen for call status changes (e.g., if other party ends call)
+        let unsubscribe: (() => void) | undefined;
+        if (appointmentId && patientId) {
+            const callRef = ref(db, `appointments/${patientId}/${appointmentId}`);
+            unsubscribe = onValue(callRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.callStatus === 'ended') {
+                    Alert.alert("Call Ended", "The call has been ended.");
+                    leaveChannel();
+                    if (router.canGoBack()) router.back();
+                }
+            });
+        }
+
         return () => {
             clearInterval(timer);
+            if (unsubscribe) unsubscribe();
             leaveChannel();
         };
-    }, []);
+    }, [appointmentId, patientId]);
 
     const requestPermissions = async () => {
         if (Platform.OS === 'android') {
@@ -83,6 +99,9 @@ export default function VideoCallScreen() {
                 appId: AGORA_APP_ID,
                 channelProfile: ChannelProfileType.ChannelProfileCommunication,
             });
+
+            // Mark engine as ready BEFORE enabling video/preview
+            setIsEngineReady(true);
 
             engine.current.registerEventHandler({
                 onJoinChannelSuccess: (connection: RtcConnection, elapsed: number) => {
@@ -188,7 +207,7 @@ export default function VideoCallScreen() {
 
             {/* Local Preview (Self) */}
             <View style={styles.localVideoContainer}>
-                {!isVideoOff ? (
+                {isEngineReady && !isVideoOff ? (
                     <RtcSurfaceView
                         canvas={{ uid: 0 }}
                         style={styles.localVideo}
