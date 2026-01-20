@@ -31,6 +31,7 @@ export default function DoctorDetailsScreen() {
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
     const [reviewSummary, setReviewSummary] = useState<string | null>(null);
     const [loadingSummary, setLoadingSummary] = useState(false);
+    const [realRating, setRealRating] = useState<number>(0);
 
     useEffect(() => {
         if (!id) return;
@@ -66,7 +67,27 @@ export default function DoctorDetailsScreen() {
                 setFetching(false);
             }
         };
+
+        // Fetch real rating from reviews
+        const fetchRating = async () => {
+            try {
+                const reviewsRef = ref(db, `reviews/${id}`);
+                const reviewsSnap = await get(reviewsRef);
+                if (reviewsSnap.exists()) {
+                    const reviews = Object.values(reviewsSnap.val()) as any[];
+                    if (reviews.length > 0) {
+                        let sum = 0;
+                        reviews.forEach((r: any) => sum += (r.rating || 0));
+                        setRealRating(parseFloat((sum / reviews.length).toFixed(1)));
+                    }
+                }
+            } catch (e) {
+                console.log("Error fetching reviews:", e);
+            }
+        };
+
         fetchDoctor();
+        fetchRating();
     }, [id]);
 
     // Calculate Next Available Dates
@@ -314,7 +335,7 @@ export default function DoctorDetailsScreen() {
                             <View style={styles.iconCircle}>
                                 <Ionicons name="star" size={20} color={Colors.primary} />
                             </View>
-                            <Text style={styles.statValue}>{doctor.rating || '4.9'}</Text>
+                            <Text style={styles.statValue}>{realRating}</Text>
                             <Text style={styles.statLabel}>Rating</Text>
                         </View>
                     </View>

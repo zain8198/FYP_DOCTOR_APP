@@ -35,23 +35,52 @@ export default function HomeScreen() {
 
     useEffect(() => {
         const doctorsRef = ref(db, 'doctors');
-        const unsubscribe = onValue(doctorsRef, (snapshot) => {
+        const unsubscribe = onValue(doctorsRef, async (snapshot) => {
             const data = snapshot.val();
             console.log("🔥 Firebase RAW doctors data:", data);
-            const doctorList = data ? Object.keys(data)
-                .map(key => ({
+
+            if (!data) {
+                setDoctors([]);
+                return;
+            }
+
+            // Build doctor list with real ratings from reviews
+            const doctorPromises = Object.keys(data).map(async (key) => {
+                const docData = data[key];
+
+                // Fetch reviews for this doctor to calculate real rating
+                let realRating = 0;
+                try {
+                    const reviewsRef = ref(db, `reviews/${key}`);
+                    const reviewsSnap = await get(reviewsRef);
+                    if (reviewsSnap.exists()) {
+                        const reviews = Object.values(reviewsSnap.val()) as any[];
+                        if (reviews.length > 0) {
+                            let sum = 0;
+                            reviews.forEach((r: any) => sum += (r.rating || 0));
+                            realRating = parseFloat((sum / reviews.length).toFixed(1));
+                        }
+                    }
+                } catch (e) {
+                    console.log("Error fetching reviews for doctor:", key);
+                }
+
+                return {
                     id: key,
-                    ...data[key],
-                    rating: data[key].rating ? parseFloat(data[key].rating) : 4.9,
-                    image: data[key].image || 'https://i.pravatar.cc/150?img=32',
-                    specialty: data[key].specialty || 'General Physician',
-                    price: data[key].price || 1000,
-                    status: data[key].status || 'pending'
-                }))
-                .filter(doc => doc.status === 'approved')
-                : [];
-            console.log("✅ Filtered APPROVED doctors:", doctorList);
-            setDoctors(doctorList);
+                    ...docData,
+                    rating: realRating,
+                    image: docData.image || 'https://i.pravatar.cc/150?img=32',
+                    specialty: docData.specialty || 'General Physician',
+                    price: docData.price || 1000,
+                    status: docData.status || 'pending'
+                };
+            });
+
+            const doctorList = await Promise.all(doctorPromises);
+            const approvedDoctors = doctorList.filter(doc => doc.status === 'approved');
+
+            console.log("✅ Filtered APPROVED doctors with real ratings:", approvedDoctors);
+            setDoctors(approvedDoctors);
         });
 
         // Fetch Favorites

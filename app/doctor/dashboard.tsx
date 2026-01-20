@@ -15,7 +15,7 @@ export default function DoctorDashboardScreen() {
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [doctorProfile, setDoctorProfile] = useState<any>(null);
-    const [stats, setStats] = useState({ patients: 0, experience: '3 Yrs', rating: 4.8 });
+    const [stats, setStats] = useState({ patients: 0, experience: '3 Yrs', rating: 0 });
     const router = useRouter();
     const [feedbackInsights, setFeedbackInsights] = useState<any>(null);
     const [loadingInsights, setLoadingInsights] = useState(false);
@@ -89,7 +89,7 @@ export default function DoctorDashboardScreen() {
                 setDoctorProfile(docData);
                 // Use stored stats if available
                 if (docData.stats) setStats(docData.stats);
-                else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs', rating: parseFloat(docData.rating || '4.8') }));
+                else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs' }));
             } else {
                 // Cache miss - fetch from Firebase
                 const doctorRef = ref(db, `doctors/${auth.currentUser.uid}`);
@@ -102,7 +102,7 @@ export default function DoctorDashboardScreen() {
                     cache.setCachedData(cacheKey, docData);
                     // Use stored stats if available, else mock/calculate
                     if (docData.stats) setStats(docData.stats);
-                    else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs', rating: parseFloat(docData.rating || '4.8') }));
+                    else setStats(s => ({ ...s, experience: docData.experience || '5 Yrs' }));
                 }
             }
 
@@ -199,8 +199,30 @@ export default function DoctorDashboardScreen() {
                 setRefreshing(false); // Stop refreshing
             });
 
+            // 3. Get Reviews for actual rating calculation
+            const reviewsRef = ref(db, `reviews/${auth.currentUser.uid}`);
+            const unsubscribeReviews = onValue(reviewsRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const reviewsData = snapshot.val();
+                    const reviewsList = Object.values(reviewsData) as any[];
+                    if (reviewsList.length > 0) {
+                        let sum = 0;
+                        reviewsList.forEach((r: any) => sum += (r.rating || 0));
+                        const avgRating = sum / reviewsList.length;
+                        setStats(prev => ({ ...prev, rating: parseFloat(avgRating.toFixed(1)) }));
+                    } else {
+                        setStats(prev => ({ ...prev, rating: 0 }));
+                    }
+                } else {
+                    setStats(prev => ({ ...prev, rating: 0 }));
+                }
+            });
+
             // Return cleanup function to unsubscribe when component unmounts
-            return unsubscribe;
+            return () => {
+                unsubscribe();
+                unsubscribeReviews();
+            };
         } catch (error) {
             console.error("Dashboard Error:", error);
             setLoading(false);
@@ -495,11 +517,10 @@ export default function DoctorDashboardScreen() {
 
                                         {(item.status === 'confirmed' || item.status === 'upcoming') && (
                                             <TouchableOpacity
-                                                style={[styles.actionBtn, { backgroundColor: '#4CAF50', width: 'auto', paddingHorizontal: 10 }]}
+                                                style={[styles.iconBtn, { backgroundColor: '#4CAF50' }]}
                                                 onPress={() => handleStartCall(item.patientId, item.id, item.patientName)}
                                             >
-                                                <Ionicons name="videocam" size={16} color="white" />
-                                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, marginLeft: 4 }}>Call</Text>
+                                                <Ionicons name="videocam" size={18} color="white" />
                                             </TouchableOpacity>
                                         )}
 
