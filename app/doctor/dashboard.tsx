@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import Constants from 'expo-constants';
 import { useCache } from "../../utils/useCache";
 import { callGeminiAPI } from "../../utils/geminiAPI";
+import { DoctorHeader } from "../../components/doctor/DoctorHeader";
 
 export default function DoctorDashboardScreen() {
     const [appointments, setAppointments] = useState<any[]>([]);
@@ -362,14 +363,11 @@ export default function DoctorDashboardScreen() {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
             >
-                {/* Header */}
-                <View style={styles.header}>
-                    <View>
-                        <Text style={styles.greeting}>Welcome Back,</Text>
-                        <Text style={styles.docName}>Dr. {doctorProfile?.name || "Doctor"} 👋</Text>
-                    </View>
-                    <Avatar.Image size={50} source={doctorProfile?.image ? { uri: doctorProfile.image } : require('../../assets/images/default_doctor.jpg')} />
-                </View>
+                {/* Header with Notification Bell */}
+                <DoctorHeader
+                    doctorName={doctorProfile?.name || "Doctor"}
+                    doctorImage={doctorProfile?.image}
+                />
 
                 {/* Stats Row */}
                 <View style={styles.statsContainer}>

@@ -56,6 +56,12 @@ export default function DoctorLayout() {
                     ),
                 }}
             />
+            <Tabs.Screen
+                name="notifications"
+                options={{
+                    href: null, // Hide from tab bar
+                }}
+            />
         </Tabs>
     );
 }

@@ -2,6 +2,7 @@ module.exports = {
     expo: {
         name: "Doc On Call",
         slug: "doc-on-call",
+        owner: "saxaco4508",
         version: "1.0.0",
         orientation: "portrait",
         icon: "./assets/images/icon.png",
@@ -28,7 +29,8 @@ module.exports = {
                 "android.permission.MODIFY_AUDIO_SETTINGS",
                 "android.permission.ACCESS_NETWORK_STATE",
                 "android.permission.INTERNET"
-            ]
+            ],
+            googleServicesFile: "./google-services.json"
         },
         web: {
             bundler: "metro",
@@ -44,6 +46,14 @@ module.exports = {
                     imageWidth: 200,
                     resizeMode: "contain",
                     backgroundColor: "#ffffff"
+                }
+            ],
+            [
+                "expo-notifications",
+                {
+                    "icon": "./assets/images/icon.png",
+                    "color": "#ffffff",
+                    "defaultChannel": "default"
                 }
             ]
         ],
@@ -64,7 +74,7 @@ module.exports = {
             EXPO_PUBLIC_GEMINI_API_KEY_10: process.env.EXPO_PUBLIC_GEMINI_API_KEY_10,
             EXPO_PUBLIC_AGORA_APP_ID: "851a46a007a44b14ad9bd64dcffee372",
             eas: {
-                projectId: "e96d9793-cb7f-4624-ba28-5b875eb243b6"
+                projectId: "7fc0ddc8-b5a3-4efb-8220-dbe05cd9c241"
             }
         }
     }

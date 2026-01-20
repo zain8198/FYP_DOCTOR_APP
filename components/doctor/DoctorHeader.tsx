@@ -1,28 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ref, onValue } from 'firebase/database';
 import { db, auth } from '../../firebase';
 import { Colors } from '../../constants/Colors';
+import { Avatar } from 'react-native-paper';
 
-interface HomeHeaderProps {
-    userName: string;
-    userImage?: string | null;
+interface DoctorHeaderProps {
+    doctorName: string;
+    doctorImage?: string | null;
 }
 
-export const HomeHeader: React.FC<HomeHeaderProps> = ({ userName, userImage }) => {
+export const DoctorHeader: React.FC<DoctorHeaderProps> = ({ doctorName, doctorImage }) => {
     const router = useRouter();
     const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
         if (!auth.currentUser) return;
 
-        const notifRef = ref(db, `users/${auth.currentUser.uid}/notifications`);
+        const notifRef = ref(db, `doctors/${auth.currentUser.uid}/notifications`);
         const unsubscribe = onValue(notifRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // Count items where read is false or missing
                 const count = Object.values(data).filter((n: any) => !n.read).length;
                 setUnreadCount(count);
             } else {
@@ -36,18 +36,18 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({ userName, userImage }) =
     return (
         <View style={styles.container}>
             <View style={styles.profileContainer}>
-                <Image
-                    source={{ uri: userImage || 'https://i.pravatar.cc/150?img=5' }}
-                    style={styles.profileImage}
+                <Avatar.Image
+                    source={{ uri: doctorImage || 'https://i.pravatar.cc/150?img=12' }}
+                    size={50}
                 />
-                <View>
-                    <Text style={styles.greeting}>Hey! {userName} 👋</Text>
-                    <Text style={styles.subGreeting}>How are you Today?</Text>
+                <View style={styles.textContainer}>
+                    <Text style={styles.greeting}>Dr. {doctorName} 👨‍⚕️</Text>
+                    <Text style={styles.subGreeting}>Dashboard</Text>
                 </View>
             </View>
             <TouchableOpacity
                 style={styles.notificationButton}
-                onPress={() => router.push('/notifications')}
+                onPress={() => router.push('/doctor/notifications')}
             >
                 <Ionicons name="notifications-outline" size={24} color="#000" />
                 {unreadCount > 0 && (
@@ -67,16 +67,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
         marginTop: 10,
+        paddingHorizontal: 20,
     },
     profileContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    profileImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: 12,
+    textContainer: {
+        marginLeft: 12,
     },
     greeting: {
         fontSize: 18,

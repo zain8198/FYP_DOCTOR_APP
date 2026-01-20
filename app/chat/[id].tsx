@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { auth, db } from '../../firebase'; // Added auth import
-import { ref, push, onValue, serverTimestamp, query, orderByChild } from 'firebase/database';
+import { ref, push, onValue, serverTimestamp, query, orderByChild, get, update } from 'firebase/database';
 import { Alert } from 'react-native'; // Added Alert
 
 interface Message {
@@ -110,6 +110,32 @@ export default function ChatScreen() {
         return () => unsubscribe();
     }, [chatId, currentUserId, targetId]);
 
+    // Helper to send push notification
+    const sendPushNotification = async (expoPushToken: string, messageBody: string) => {
+        const message = {
+            to: expoPushToken,
+            sound: 'default',
+            title: 'New Message',
+            body: messageBody,
+            data: { someData: 'goes here', url: `/chat/${currentUserId}` },
+        };
+
+        try {
+            await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Accept-encoding': 'gzip, deflate',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(message),
+            });
+            console.log("Notification sent successfully");
+        } catch (error) {
+            console.error("Error sending notification:", error);
+        }
+    };
+
     const sendMessage = async () => {
         if (inputText.trim().length === 0) return;
         if (!currentUserId) {
@@ -120,24 +146,131 @@ export default function ChatScreen() {
         try {
             const messagesRef = ref(db, `chats/${chatId}/messages`);
             const timestamp = Date.now();
+            const textToSend = inputText; // Capture text for notification before clearing
 
             await push(messagesRef, {
-                text: inputText,
+                text: textToSend,
                 senderId: currentUserId,
                 createdAt: timestamp
             });
 
             // Update chat metadata for chat list screen
             const chatMetadataRef = ref(db, `chats/${chatId}/lastMessage`);
-            const { update: updateDb } = await import('firebase/database');
+            const { update: updateDb, get } = await import('firebase/database');
 
             await updateDb(chatMetadataRef, {
-                text: inputText,
+                text: textToSend,
                 senderId: currentUserId,
                 timestamp: timestamp
             });
 
             setInputText('');
+
+            // --- SEND PUSH NOTIFICATION ---
+            // 1. Find who we are chatting with (targetId)
+            // 2. Get their token from Firebase
+            let targetToken = null;
+
+            // Try fetching token from 'users'
+            const targetUserRef = ref(db, `users/${targetId}`);
+            const targetUserSnap = await get(targetUserRef);
+            if (targetUserSnap.exists() && targetUserSnap.val().expoPushToken) {
+                targetToken = targetUserSnap.val().expoPushToken;
+            } else {
+                // Try fetching token from 'doctors'
+                const targetDocRef = ref(db, `doctors/${targetId}`);
+                const targetDocSnap = await get(targetDocRef);
+                if (targetDocSnap.exists() && targetDocSnap.val().expoPushToken) {
+                    targetToken = targetDocSnap.val().expoPushToken;
+                }
+            }
+
+            if (targetToken) {
+                // Determine User's Name for the Title
+                // We could fetch our own profile name, or just use "New Message"
+                // For now, simple Title.
+                await sendPushNotification(targetToken, textToSend);
+            } else {
+                console.log("Target user does not have a push token.");
+            }
+
+            // --- SAVE PERSISTENT NOTIFICATION (IN-APP HISTORY) ---
+            // 1. Fetch sender's actual name from Firebase
+            let senderName = 'Someone';
+            try {
+                const senderDocRef = ref(db, `doctors/${currentUserId}`);
+                const senderDocSnap = await get(senderDocRef);
+                if (senderDocSnap.exists() && senderDocSnap.val().name) {
+                    senderName = senderDocSnap.val().name;
+                } else {
+                    // Try users table
+                    const senderUserRef = ref(db, `users/${currentUserId}`);
+                    const senderUserSnap = await get(senderUserRef);
+                    if (senderUserSnap.exists() && senderUserSnap.val().name) {
+                        senderName = senderUserSnap.val().name;
+                    }
+                }
+            } catch (e) {
+                console.log("Error fetching sender name:", e);
+            }
+
+            // 2. Determine if recipient is a doctor or user
+            let recipientPath = `users/${targetId}/notifications`;
+            try {
+                const recipientDocRef = ref(db, `doctors/${targetId}`);
+                const recipientDocSnap = await get(recipientDocRef);
+                if (recipientDocSnap.exists()) {
+                    // Recipient is a doctor
+                    recipientPath = `doctors/${targetId}/notifications`;
+                }
+            } catch (e) {
+                console.log("Error checking recipient type:", e);
+            }
+
+            // 3. Check if notification from this sender already exists (WhatsApp-style grouping)
+            const notificationsRef = ref(db, recipientPath);
+            const existingNotifsSnap = await get(notificationsRef);
+            let existingNotifKey = null;
+            let messageCount = 1;
+
+            if (existingNotifsSnap.exists()) {
+                const notifs = existingNotifsSnap.val();
+                // Find if there's already an unread notification from this sender
+                for (const key in notifs) {
+                    if (notifs[key].data?.chatId === currentUserId && !notifs[key].read) {
+                        existingNotifKey = key;
+                        messageCount = (notifs[key].messageCount || 1) + 1;
+                        break;
+                    }
+                }
+            }
+
+            if (existingNotifKey) {
+                // Update existing notification (group messages)
+                const existingNotifRef = ref(db, `${recipientPath}/${existingNotifKey}`);
+                await update(existingNotifRef, {
+                    title: `${messageCount} new messages from ${senderName}`,
+                    body: textToSend, // Show latest message
+                    messageCount: messageCount,
+                    createdAt: timestamp, // Update timestamp to latest
+                });
+            } else {
+                // Create new notification
+                await push(notificationsRef, {
+                    title: `New message from ${senderName}`,
+                    body: textToSend,
+                    type: 'message',
+                    data: {
+                        chatId: currentUserId,
+                        senderName: senderName
+                    },
+                    messageCount: 1,
+                    createdAt: timestamp,
+                    read: false
+                });
+            }
+            // -----------------------------
+
         } catch (error: any) {
             console.error("Send Error:", error);
             Alert.alert("Error", "Failed to send message: " + error.message);

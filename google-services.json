@@ -1,0 +1,30 @@
+{
+    "project_info": {
+        "project_number": "945344925692",
+        "firebase_url": "https://doc-app-905e8-default-rtdb.firebaseio.com",
+        "project_id": "doc-app-905e8",
+        "storage_bucket": "doc-app-905e8.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:945344925692:android:c547a464a55a880afcac79",
+                "android_client_info": {
+                    "package_name": "com.yovari9016.doconcall"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyB_f_GVm70o5EVPvswSQDKyzRYdN4XHwCs"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}
