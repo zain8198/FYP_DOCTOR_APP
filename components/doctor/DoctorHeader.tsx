@@ -23,7 +23,12 @@ export const DoctorHeader: React.FC<DoctorHeaderProps> = ({ doctorName, doctorIm
         const unsubscribe = onValue(notifRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                const count = Object.values(data).filter((n: any) => !n.read).length;
+                const count = Object.values(data).reduce((acc: number, n: any) => {
+                    if (!n.read) {
+                        return acc + (n.messageCount || 1);
+                    }
+                    return acc;
+                }, 0);
                 setUnreadCount(count);
             } else {
                 setUnreadCount(0);

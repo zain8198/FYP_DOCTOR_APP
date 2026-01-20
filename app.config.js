@@ -30,7 +30,8 @@ module.exports = {
                 "android.permission.ACCESS_NETWORK_STATE",
                 "android.permission.INTERNET"
             ],
-            googleServicesFile: "./google-services.json"
+            googleServicesFile: "./google-services.json",
+            softwareKeyboardLayoutMode: "pan"
         },
         web: {
             bundler: "metro",
