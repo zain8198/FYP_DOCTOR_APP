@@ -24,7 +24,8 @@ export default function DoctorProfileScreen() {
     const [availability, setAvailability] = useState({
         days: [] as string[],
         startTime: '09:00 AM',
-        endTime: '05:00 PM'
+        endTime: '05:00 PM',
+        sessionDuration: '60 min'
     });
 
     const [loading, setLoading] = useState(true);
@@ -55,7 +56,8 @@ export default function DoctorProfileScreen() {
                     setAvailability({
                         days: data.availability.days || [],
                         startTime: data.availability.startTime || '09:00 AM',
-                        endTime: data.availability.endTime || '05:00 PM'
+                        endTime: data.availability.endTime || '05:00 PM',
+                        sessionDuration: data.availability.sessionDuration || '60 min'
                     });
                 }
             }
@@ -248,6 +250,21 @@ export default function DoctorProfileScreen() {
                                         ))}
                                     </ScrollView>
                                 </View>
+                            </View>
+                            <Text style={[styles.subLabel, { marginTop: 15 }]}>Session Duration</Text>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                                {['15 min', '30 min', '45 min', '60 min'].map(dur => (
+                                    <Chip
+                                        key={dur}
+                                        selected={availability.sessionDuration === dur}
+                                        onPress={() => setAvailability({ ...availability, sessionDuration: dur })}
+                                        style={[styles.dayChip, availability.sessionDuration === dur && styles.dayChipSelected]}
+                                        showSelectedOverlay
+                                        textStyle={{ fontSize: 12 }}
+                                    >
+                                        {dur}
+                                    </Chip>
+                                ))}
                             </View>
                         </View>
 

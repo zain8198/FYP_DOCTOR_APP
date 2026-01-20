@@ -149,7 +149,7 @@ export default function DoctorDetailsScreen() {
             return;
         }
 
-        const { days, startTime, endTime } = doctor.availability;
+        const { days, startTime, endTime, sessionDuration } = doctor.availability;
         const currentDayName = format(date, "EEEE"); // Monday, Tuesday...
 
         if (days && !days.includes(currentDayName)) {
@@ -157,20 +157,32 @@ export default function DoctorDetailsScreen() {
             return;
         }
 
-        // Generate hourly slots
-        const slots = [];
-        // Simple generator assuming generic format "09:00 AM"
-        const TIMES = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM"];
-
-        let startIndex = TIMES.indexOf(startTime);
-        let endIndex = TIMES.indexOf(endTime);
-
-        if (startIndex === -1) startIndex = 0;
-        if (endIndex === -1) endIndex = TIMES.length - 1;
-
-        for (let i = startIndex; i <= endIndex; i++) {
-            slots.push(TIMES[i]);
+        // Parse duration (e.g. "30 min" -> 30)
+        let durationMinutes = 60; // Default
+        if (sessionDuration) {
+            const match = sessionDuration.match(/(\d+)/);
+            if (match) durationMinutes = parseInt(match[0]);
         }
+
+        const slots = [];
+        const parseTime = (timeStr: string) => {
+            const [time, modifier] = timeStr.split(' ');
+            let [hours, minutes] = time.split(':').map(Number);
+            if (hours === 12 && modifier === 'AM') hours = 0;
+            if (hours !== 12 && modifier === 'PM') hours += 12;
+            const d = new Date();
+            d.setHours(hours, minutes, 0, 0);
+            return d;
+        };
+
+        let current = parseTime(startTime || "09:00 AM");
+        const end = parseTime(endTime || "05:00 PM");
+
+        while (isBefore(current, end)) {
+            slots.push(format(current, "hh:mm a"));
+            current = new Date(current.getTime() + durationMinutes * 60000);
+        }
+
         setAvailableSlots(slots);
         setSelectedTimeSlot(""); // Reset selection on date change
 

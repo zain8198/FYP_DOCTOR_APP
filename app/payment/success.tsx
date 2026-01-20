@@ -50,6 +50,15 @@ export default function PaymentSuccessScreen() {
                 amount: amount,
                 createdAt: Date.now()
             });
+
+            // Update doctor's schedule to mark slot as booked
+            // Use dateIso if available for the database path (must match yyyy-MM-dd used in fetching)
+            const scheduleDate = params.dateIso as string || appointmentDate;
+
+            if (params.doctorId && scheduleDate && appointmentTime) {
+                const scheduleRef = ref(db, `doctor_schedules/${params.doctorId}/${scheduleDate}/${appointmentTime}`);
+                await set(scheduleRef, true);
+            }
         } catch (error) {
             console.error('Error creating appointment:', error);
         }
