@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, TextInput, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, TextInput, Alert, ActivityIndicator, Image, KeyboardAvoidingView } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,73 +78,79 @@ export default function JazzCashPaymentScreen() {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="#FF6B35" />
 
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton} disabled={processing}>
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>JazzCash Payment</Text>
-                <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView contentContainerStyle={styles.content}>
-                <View style={styles.logoContainer}>
-                    <View style={styles.mockLogo}>
-                        <Text style={styles.logoText}>JazzCash</Text>
-                    </View>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'android' ? 30 : 0}
+            >
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton} disabled={processing}>
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>JazzCash Payment</Text>
+                    <View style={{ width: 24 }} />
                 </View>
 
-                <View style={styles.amountCard}>
-                    <Text style={styles.amountLabel}>Payable Amount</Text>
-                    <Text style={styles.amountValue}>{formatAmount(total)}</Text>
-                </View>
-
-                <View style={styles.formCard}>
-                    <Text style={styles.formInstruction}>Enter your JazzCash account details</Text>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Mobile Number</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="03xx xxxxxxx"
-                            keyboardType="phone-pad"
-                            maxLength={11}
-                            value={mobileNumber}
-                            onChangeText={setMobileNumber}
-                            editable={!processing}
-                        />
+                <ScrollView contentContainerStyle={styles.content}>
+                    <View style={styles.logoContainer}>
+                        <View style={styles.mockLogo}>
+                            <Text style={styles.logoText}>JazzCash</Text>
+                        </View>
                     </View>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>MPIN</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="xxxx"
-                            keyboardType="numeric"
-                            maxLength={4}
-                            secureTextEntry
-                            value={mpin}
-                            onChangeText={setMpin}
-                            editable={!processing}
-                        />
+                    <View style={styles.amountCard}>
+                        <Text style={styles.amountLabel}>Payable Amount</Text>
+                        <Text style={styles.amountValue}>{formatAmount(total)}</Text>
                     </View>
 
-                    <Text style={styles.hint}>
-                        You will receive a USSD prompt on your mobile to confirm. (Simulated)
-                    </Text>
-                </View>
+                    <View style={styles.formCard}>
+                        <Text style={styles.formInstruction}>Enter your JazzCash account details</Text>
 
-                <TouchableOpacity
-                    style={[styles.payButton, processing && styles.disabledButton]}
-                    onPress={handlePayment}
-                    disabled={processing}
-                >
-                    {processing ? (
-                        <ActivityIndicator color="#FFF" />
-                    ) : (
-                        <Text style={styles.payButtonText}>Pay with JazzCash</Text>
-                    )}
-                </TouchableOpacity>
-            </ScrollView>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Mobile Number</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="03xx xxxxxxx"
+                                keyboardType="phone-pad"
+                                maxLength={11}
+                                value={mobileNumber}
+                                onChangeText={setMobileNumber}
+                                editable={!processing}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>MPIN</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="xxxx"
+                                keyboardType="numeric"
+                                maxLength={4}
+                                secureTextEntry
+                                value={mpin}
+                                onChangeText={setMpin}
+                                editable={!processing}
+                            />
+                        </View>
+
+                        <Text style={styles.hint}>
+                            You will receive a USSD prompt on your mobile to confirm. (Simulated)
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.payButton, processing && styles.disabledButton]}
+                        onPress={handlePayment}
+                        disabled={processing}
+                    >
+                        {processing ? (
+                            <ActivityIndicator color="#FFF" />
+                        ) : (
+                            <Text style={styles.payButtonText}>Pay with JazzCash</Text>
+                        )}
+                    </TouchableOpacity>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

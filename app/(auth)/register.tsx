@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { TextInput, Button, Text, useTheme } from "react-native-paper";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "expo-router";
@@ -47,59 +47,64 @@ export default function RegisterScreen() {
 
     return (
         <ThemedBackground style={styles.container}>
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text variant="displaySmall" style={{ color: theme.colors.primary, fontWeight: 'bold', marginBottom: 8 }}>
-                        Create Account
-                    </Text>
-                    <Text variant="titleMedium" style={{ color: theme.colors.secondary, opacity: 0.8 }}>
-                        Sign up to get started
-                    </Text>
-                </View>
-
-                <View style={styles.form}>
-                    <TextInput
-                        label="Email"
-                        value={email}
-                        onChangeText={setEmail}
-                        mode="outlined"
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        left={<TextInput.Icon icon="email-outline" />}
-                        style={styles.input}
-                    />
-                    <TextInput
-                        label="Password"
-                        value={password}
-                        onChangeText={setPassword}
-                        mode="outlined"
-                        secureTextEntry={!showPassword}
-                        left={<TextInput.Icon icon="lock-outline" />}
-                        right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
-                        style={styles.input}
-                    />
-
-                    <Button
-                        mode="contained"
-                        onPress={handleSignUp}
-                        loading={loading}
-                        style={styles.button}
-                        contentStyle={styles.buttonContent}
-                        labelStyle={styles.buttonLabel}
-                    >
-                        Sign Up
-                    </Button>
-
-                    <View style={styles.footer}>
-                        <Text variant="bodyMedium">Already have an account? </Text>
-                        <TouchableOpacity onPress={() => router.back()}>
-                            <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                                Log In
-                            </Text>
-                        </TouchableOpacity>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{ flex: 1 }}
+            >
+                <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }} showsVerticalScrollIndicator={false}>
+                    <View style={styles.header}>
+                        <Text variant="displaySmall" style={{ color: theme.colors.primary, fontWeight: 'bold', marginBottom: 8 }}>
+                            Create Account
+                        </Text>
+                        <Text variant="titleMedium" style={{ color: theme.colors.secondary, opacity: 0.8 }}>
+                            Sign up to get started
+                        </Text>
                     </View>
-                </View>
-            </View>
+
+                    <View style={styles.form}>
+                        <TextInput
+                            label="Email"
+                            value={email}
+                            onChangeText={setEmail}
+                            mode="outlined"
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            left={<TextInput.Icon icon="email-outline" />}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            label="Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            mode="outlined"
+                            secureTextEntry={!showPassword}
+                            left={<TextInput.Icon icon="lock-outline" />}
+                            right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword(!showPassword)} />}
+                            style={styles.input}
+                        />
+
+                        <Button
+                            mode="contained"
+                            onPress={handleSignUp}
+                            loading={loading}
+                            style={styles.button}
+                            contentStyle={styles.buttonContent}
+                            labelStyle={styles.buttonLabel}
+                        >
+                            Sign Up
+                        </Button>
+
+                        <View style={styles.footer}>
+                            <Text variant="bodyMedium">Already have an account? </Text>
+                            <TouchableOpacity onPress={() => router.back()}>
+                                <Text variant="bodyMedium" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                                    Log In
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </ThemedBackground>
     );
 }

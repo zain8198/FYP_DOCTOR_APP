@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -136,123 +136,129 @@ export default function CardPaymentScreen() {
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
 
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton} disabled={processing}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.text} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Card Payment</Text>
-                <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-                {/* Amount Display */}
-                <View style={styles.amountCard}>
-                    <Text style={styles.amountLabel}>Total Amount</Text>
-                    <Text style={styles.amountValue}>{formatAmount(total)}</Text>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'android' ? 30 : 0}
+            >
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton} disabled={processing}>
+                        <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Card Payment</Text>
+                    <View style={{ width: 24 }} />
                 </View>
 
-                {/* Card Form */}
-                <View style={styles.formCard}>
-                    <Text style={styles.formTitle}>Card Details</Text>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                    {/* Amount Display */}
+                    <View style={styles.amountCard}>
+                        <Text style={styles.amountLabel}>Total Amount</Text>
+                        <Text style={styles.amountValue}>{formatAmount(total)}</Text>
+                    </View>
 
-                    {/* Card Number */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Card Number</Text>
-                        <View style={styles.inputWrapper}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="1234 5678 9012 3456"
-                                value={cardNumber}
-                                onChangeText={handleCardNumberChange}
-                                keyboardType="numeric"
-                                maxLength={19}
-                                editable={!processing}
-                            />
-                            {cardType !== 'Unknown' && cardNumber.length > 0 && (
-                                <Text style={styles.cardType}>{cardType}</Text>
-                            )}
+                    {/* Card Form */}
+                    <View style={styles.formCard}>
+                        <Text style={styles.formTitle}>Card Details</Text>
+
+                        {/* Card Number */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Card Number</Text>
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="1234 5678 9012 3456"
+                                    value={cardNumber}
+                                    onChangeText={handleCardNumberChange}
+                                    keyboardType="numeric"
+                                    maxLength={19}
+                                    editable={!processing}
+                                />
+                                {cardType !== 'Unknown' && cardNumber.length > 0 && (
+                                    <Text style={styles.cardType}>{cardType}</Text>
+                                )}
+                            </View>
                         </View>
-                    </View>
 
-                    {/* Cardholder Name */}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Cardholder Name</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="JOHN DOE"
-                            value={cardholderName}
-                            onChangeText={setCardholderName}
-                            autoCapitalize="characters"
-                            editable={!processing}
-                        />
-                    </View>
-
-                    {/* Expiry and CVV */}
-                    <View style={styles.row}>
-                        <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
-                            <Text style={styles.inputLabel}>Expiry Date</Text>
+                        {/* Cardholder Name */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Cardholder Name</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="MM/YY"
-                                value={expiryDate}
-                                onChangeText={handleExpiryChange}
-                                keyboardType="numeric"
-                                maxLength={5}
+                                placeholder="JOHN DOE"
+                                value={cardholderName}
+                                onChangeText={setCardholderName}
+                                autoCapitalize="characters"
                                 editable={!processing}
                             />
                         </View>
 
-                        <View style={[styles.inputContainer, { flex: 1, marginLeft: 10 }]}>
-                            <Text style={styles.inputLabel}>CVV</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="123"
-                                value={cvv}
-                                onChangeText={handleCvvChange}
-                                keyboardType="numeric"
-                                maxLength={4}
-                                secureTextEntry
-                                editable={!processing}
-                            />
+                        {/* Expiry and CVV */}
+                        <View style={styles.row}>
+                            <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
+                                <Text style={styles.inputLabel}>Expiry Date</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="MM/YY"
+                                    value={expiryDate}
+                                    onChangeText={handleExpiryChange}
+                                    keyboardType="numeric"
+                                    maxLength={5}
+                                    editable={!processing}
+                                />
+                            </View>
+
+                            <View style={[styles.inputContainer, { flex: 1, marginLeft: 10 }]}>
+                                <Text style={styles.inputLabel}>CVV</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="123"
+                                    value={cvv}
+                                    onChangeText={handleCvvChange}
+                                    keyboardType="numeric"
+                                    maxLength={4}
+                                    secureTextEntry
+                                    editable={!processing}
+                                />
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                {/* Security Notice */}
-                <View style={styles.securityNotice}>
-                    <Ionicons name="shield-checkmark-outline" size={20} color={Colors.primary} />
-                    <Text style={styles.securityText}>
-                        Your payment is secure and encrypted
-                    </Text>
-                </View>
+                    {/* Security Notice */}
+                    <View style={styles.securityNotice}>
+                        <Ionicons name="shield-checkmark-outline" size={20} color={Colors.primary} />
+                        <Text style={styles.securityText}>
+                            Your payment is secure and encrypted
+                        </Text>
+                    </View>
 
-                {/* Test Card Notice */}
-                <View style={styles.testNotice}>
-                    <Ionicons name="information-circle-outline" size={18} color="#FF9800" />
-                    <Text style={styles.testText}>
-                        Test Mode: Use 4242 4242 4242 4242 for successful payment
-                    </Text>
-                </View>
-            </ScrollView>
+                    {/* Test Card Notice */}
+                    <View style={styles.testNotice}>
+                        <Ionicons name="information-circle-outline" size={18} color="#FF9800" />
+                        <Text style={styles.testText}>
+                            Test Mode: Use 4242 4242 4242 4242 for successful payment
+                        </Text>
+                    </View>
+                </ScrollView>
 
-            {/* Pay Button */}
-            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                <TouchableOpacity
-                    style={[styles.payButton, processing && styles.payButtonDisabled]}
-                    onPress={handlePayment}
-                    disabled={processing}
-                >
-                    {processing ? (
-                        <ActivityIndicator color="#FFF" />
-                    ) : (
-                        <>
-                            <Ionicons name="lock-closed" size={20} color="#FFF" style={{ marginRight: 8 }} />
-                            <Text style={styles.payButtonText}>Pay {formatAmount(total)}</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
-            </View>
+                {/* Pay Button */}
+                <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+                    <TouchableOpacity
+                        style={[styles.payButton, processing && styles.payButtonDisabled]}
+                        onPress={handlePayment}
+                        disabled={processing}
+                    >
+                        {processing ? (
+                            <ActivityIndicator color="#FFF" />
+                        ) : (
+                            <>
+                                <Ionicons name="lock-closed" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                                <Text style={styles.payButtonText}>Pay {formatAmount(total)}</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
